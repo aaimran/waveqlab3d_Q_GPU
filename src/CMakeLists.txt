@@ -20,11 +20,13 @@ set(WQL3D_OPENACC_LITERAL ".false.")
 set(WQL3D_CUDA_AWARE_MPI_LITERAL ".false.")
 set(WQL3D_BACKEND_NAME "cpu")
 set(WQL3D_ACCELERATOR_RUNTIME accelerator_runtime_cpu.f90)
+set(WQL3D_DEVICE_DATA device_data_cpu.f90)
 set(WQL3D_ALLOCATION_TRACKING allocation_tracking_disabled.f90)
 if(WQL3D_ENABLE_OPENACC)
     set(WQL3D_OPENACC_LITERAL ".true.")
     set(WQL3D_BACKEND_NAME "openacc")
     set(WQL3D_ACCELERATOR_RUNTIME accelerator_runtime_openacc.f90)
+    set(WQL3D_DEVICE_DATA device_data_openacc.f90)
 endif()
 
 if(WQL3D_ENABLE_CUDA_AWARE_MPI)
@@ -81,6 +83,7 @@ set(WQL3D_SRC
   decomposition_safety.f90
   datatypes.f90
   persistent_memory.f90
+  ${WQL3D_DEVICE_DATA}
   domain.f90
   metrics.f90
   elastic.f90

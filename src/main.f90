@@ -32,6 +32,9 @@ program main
                                   finalize_accelerator_runtime
   use allocation_tracking, only : begin_timestep_allocation_tracking, &
                                   end_timestep_allocation_tracking
+  use device_data, only : enter_domain_device_data, &
+                          assert_domain_device_data_present, &
+                          exit_domain_device_data
   implicit none
 
   ! domain_type contains all properties of a domain, including fields
@@ -96,6 +99,8 @@ program main
 
   call init_RK(RK) ! Runge-Kutta coefficients
   call init_domain(D, infile, ifname, resolved_config) ! domain
+  call enter_domain_device_data(D)
+  call assert_domain_device_data_present(D)
   call begin_timestep_allocation_tracking()
 
   !call create_dataset("seismogram1", 0, [0])
@@ -158,6 +163,8 @@ program main
 
   call end_timestep_allocation_tracking()
 
+  call assert_domain_device_data_present(D)
+  call exit_domain_device_data(D)
   call close_domain(D)
   call finalize_accelerator_runtime()
   !call finish_hdf_output()
