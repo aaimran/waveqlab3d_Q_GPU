@@ -929,7 +929,7 @@ contains
     integer(int64), intent(inout) :: payload_bytes
     if (.not.allocated(value)) return
     if (.not.acc_is_present(value)) call device_data_error('RUN-DEVICE-DATA-009','Mapped leaf is unexpectedly absent.')
-call acc_delete(value)
+call acc_delete_finalize(value)
     if (acc_is_present(value)) call device_data_error('RUN-DEVICE-DATA-010','Leaf remains present after delete.')
     call account_leaf(size(value), storage_size(0.0_wp), leaf_count, payload_bytes)
   end subroutine
@@ -940,7 +940,7 @@ call acc_delete(value)
     integer(int64), intent(inout) :: payload_bytes
     if (.not.allocated(value)) return
     if (.not.acc_is_present(value)) call device_data_error('RUN-DEVICE-DATA-009','Mapped leaf is unexpectedly absent.')
-call acc_delete(value)
+call acc_delete_finalize(value)
     if (acc_is_present(value)) call device_data_error('RUN-DEVICE-DATA-010','Leaf remains present after delete.')
     call account_leaf(size(value), storage_size(0.0_wp), leaf_count, payload_bytes)
   end subroutine
@@ -951,7 +951,7 @@ call acc_delete(value)
     integer(int64), intent(inout) :: payload_bytes
     if (.not.allocated(value)) return
     if (.not.acc_is_present(value)) call device_data_error('RUN-DEVICE-DATA-009','Mapped leaf is unexpectedly absent.')
-call acc_delete(value)
+call acc_delete_finalize(value)
     if (acc_is_present(value)) call device_data_error('RUN-DEVICE-DATA-010','Leaf remains present after delete.')
     call account_leaf(size(value), storage_size(0.0_wp), leaf_count, payload_bytes)
   end subroutine
@@ -962,7 +962,7 @@ call acc_delete(value)
     integer(int64), intent(inout) :: payload_bytes
     if (.not.allocated(value)) return
     if (.not.acc_is_present(value)) call device_data_error('RUN-DEVICE-DATA-009','Mapped leaf is unexpectedly absent.')
-call acc_delete(value)
+call acc_delete_finalize(value)
     if (acc_is_present(value)) call device_data_error('RUN-DEVICE-DATA-010','Leaf remains present after delete.')
     call account_leaf(size(value), storage_size(0.0_wp), leaf_count, payload_bytes)
   end subroutine
@@ -973,7 +973,7 @@ call acc_delete(value)
     integer(int64), intent(inout) :: payload_bytes
     if (.not.allocated(value)) return
     if (.not.acc_is_present(value)) call device_data_error('RUN-DEVICE-DATA-009','Mapped leaf is unexpectedly absent.')
-call acc_delete(value)
+call acc_delete_finalize(value)
     if (acc_is_present(value)) call device_data_error('RUN-DEVICE-DATA-010','Leaf remains present after delete.')
     call account_leaf(size(value), storage_size(0), leaf_count, payload_bytes)
   end subroutine
@@ -984,7 +984,7 @@ call acc_delete(value)
     integer(int64), intent(inout) :: payload_bytes
     if (.not.allocated(value)) return
     if (.not.acc_is_present(value)) call device_data_error('RUN-DEVICE-DATA-009','Mapped leaf is unexpectedly absent.')
-call acc_delete(value)
+call acc_delete_finalize(value)
     if (acc_is_present(value)) call device_data_error('RUN-DEVICE-DATA-010','Leaf remains present after delete.')
     call account_leaf(size(value), storage_size(value), leaf_count, payload_bytes)
   end subroutine

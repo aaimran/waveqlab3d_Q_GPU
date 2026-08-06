@@ -296,7 +296,7 @@ contains
 """
     lines += helpers.splitlines()
     # check/unmap are mechanically identical by rank apart from the runtime call.
-    for prefix, operation in (("check", ""), ("unmap", "call acc_delete(value)")):
+    for prefix, operation in (("check", ""), ("unmap", "call acc_delete_finalize(value)")):
         for typename, declaration, zero in (
             ("real_1", "real(kind=wp), allocatable, intent(inout) :: value(:)", "0.0_wp"),
             ("real_2", "real(kind=wp), allocatable, intent(inout) :: value(:,:)", "0.0_wp"),
