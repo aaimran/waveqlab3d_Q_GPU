@@ -274,6 +274,8 @@ contains
        if (in_block_comm(2) .and. .not.in_block_comm(1)) call init_vel_state(D%problem, D%I(i), D%B(2), 1.0_wp, 1)
     end do
 
+    call report_workspace_memory(D)
+
     ! Exchange materials across interface (only for 2-block mode)
     if (D%nifaces > 0) call exchange_materials_interface(D)
 
@@ -309,6 +311,58 @@ contains
     !> (this will be a different naming convention than in original version of 3D code)
 
   end subroutine init_domain
+
+
+  subroutine report_workspace_memory(D)
+    use, intrinsic :: iso_fortran_env, only : int64
+    use mpi3dbasic, only : rank
+    implicit none
+
+    type(domain_type), intent(in) :: D
+    integer(int64) :: block_bytes, interface_bytes, local_bytes
+    integer(int64) :: global_bytes, maximum_rank_bytes, bytes_per_value
+    integer :: i, ierr
+
+    bytes_per_value = int(storage_size(0.0_wp) / 8, int64)
+    block_bytes = 0_int64
+    interface_bytes = 0_int64
+
+    do i = 1, D%nblocks
+       if (allocated(D%B(i)%work_boundary_q)) &
+            block_bytes = block_bytes + bytes_per_value * size(D%B(i)%work_boundary_q, kind=int64)
+       if (allocated(D%B(i)%work_boundary_r)) &
+            block_bytes = block_bytes + bytes_per_value * size(D%B(i)%work_boundary_r, kind=int64)
+       if (allocated(D%B(i)%work_boundary_s)) &
+            block_bytes = block_bytes + bytes_per_value * size(D%B(i)%work_boundary_s, kind=int64)
+    end do
+
+    do i = 1, D%nifaces
+       if (allocated(D%I(i)%work_F)) &
+            interface_bytes = interface_bytes + bytes_per_value * size(D%I(i)%work_F, kind=int64)
+       if (allocated(D%I(i)%work_G)) &
+            interface_bytes = interface_bytes + bytes_per_value * size(D%I(i)%work_G, kind=int64)
+       if (allocated(D%I(i)%work_u_rotated)) &
+            interface_bytes = interface_bytes + bytes_per_value * size(D%I(i)%work_u_rotated, kind=int64)
+       if (allocated(D%I(i)%work_v_rotated)) &
+            interface_bytes = interface_bytes + bytes_per_value * size(D%I(i)%work_v_rotated, kind=int64)
+       if (allocated(D%I(i)%work_u_hat)) &
+            interface_bytes = interface_bytes + bytes_per_value * size(D%I(i)%work_u_hat, kind=int64)
+       if (allocated(D%I(i)%work_v_hat)) &
+            interface_bytes = interface_bytes + bytes_per_value * size(D%I(i)%work_v_hat, kind=int64)
+    end do
+
+    local_bytes = block_bytes + interface_bytes
+    call MPI_Reduce(local_bytes, global_bytes, 1, MPI_INTEGER8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    call MPI_Reduce(local_bytes, maximum_rank_bytes, 1, MPI_INTEGER8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
+
+    if (rank == 0) then
+       write(*,'(A)') 'Persistent face-workspace memory:'
+       write(*,'(A,F10.3,A)') '  rank 0 blocks:     ', real(block_bytes, wp) / 1048576.0_wp, ' MiB'
+       write(*,'(A,F10.3,A)') '  rank 0 interfaces: ', real(interface_bytes, wp) / 1048576.0_wp, ' MiB'
+       write(*,'(A,F10.3,A)') '  maximum per rank:  ', real(maximum_rank_bytes, wp) / 1048576.0_wp, ' MiB'
+       write(*,'(A,F10.3,A)') '  aggregate ranks:   ', real(global_bytes, wp) / 1048576.0_wp, ' MiB'
+    end if
+  end subroutine report_workspace_memory
 
 
   subroutine validate_initialized_geometry(D, II, serial_shared_blocks)
@@ -422,14 +476,14 @@ contains
     integer :: i, ierr
     logical :: local_finite, global_finite
 
-    if (trim(D%response) == 'anelastic-Q4' .or. trim(D%response) == 'anelastic-Q8' .or. &
-        trim(D%response) == 'anelastic-fQ8') then
-       local_eta = 0.0_wp
-       local_field = 0.0_wp
-       local_finite = .true.
-       do i = 1, D%nblocks
-          if (.not.allocated(D%B(i)%F%F)) cycle
-          local_field = max(local_field, maxval(abs(D%B(i)%F%F)))
+    local_eta = 0.0_wp
+    local_field = 0.0_wp
+    local_finite = .true.
+    do i = 1, D%nblocks
+       if (.not.allocated(D%B(i)%F%F)) cycle
+       local_field = max(local_field, maxval(abs(D%B(i)%F%F)))
+       if (trim(D%response) == 'anelastic-Q4' .or. trim(D%response) == 'anelastic-Q8' .or. &
+           trim(D%response) == 'anelastic-fQ8') then
           if (trim(D%response) == 'anelastic-Q4' .and. allocated(D%B(i)%M%eta4Q)) then
              local_eta = max(local_eta, maxval(abs(D%B(i)%M%eta4Q)), &
                   maxval(abs(D%B(i)%M%eta5Q)), maxval(abs(D%B(i)%M%eta6Q)), &
@@ -446,15 +500,21 @@ contains
                   maxval(abs(D%B(i)%M%eta7Qf8)),maxval(abs(D%B(i)%M%eta8Qf8)), &
                   maxval(abs(D%B(i)%M%eta9Qf8)))
           end if
-          local_finite = local_finite .and. ieee_is_finite(local_field) .and. &
-               ieee_is_finite(local_eta)
-       end do
-       call MPI_Allreduce(local_eta, global_eta, 1, MPI_DOUBLE_PRECISION, MPI_MAX, &
-            MPI_COMM_WORLD, ierr)
-       call MPI_Allreduce(local_field, global_field, 1, MPI_DOUBLE_PRECISION, MPI_MAX, &
-            MPI_COMM_WORLD, ierr)
-       call MPI_Allreduce(local_finite, global_finite, 1, MPI_LOGICAL, MPI_LAND, &
-            MPI_COMM_WORLD, ierr)
+       end if
+       local_finite = local_finite .and. ieee_is_finite(local_field) .and. &
+            ieee_is_finite(local_eta)
+    end do
+    call MPI_Allreduce(local_eta, global_eta, 1, MPI_DOUBLE_PRECISION, MPI_MAX, &
+         MPI_COMM_WORLD, ierr)
+    call MPI_Allreduce(local_field, global_field, 1, MPI_DOUBLE_PRECISION, MPI_MAX, &
+         MPI_COMM_WORLD, ierr)
+    call MPI_Allreduce(local_finite, global_finite, 1, MPI_LOGICAL, MPI_LAND, &
+         MPI_COMM_WORLD, ierr)
+    if (.not.global_finite .and. trim(D%response) == 'elastic') &
+         call fatal_local('RUN-ELASTIC-001', &
+         'Non-finite elastic field state detected at shutdown.', 'close_domain')
+    if (trim(D%response) == 'anelastic-Q4' .or. trim(D%response) == 'anelastic-Q8' .or. &
+        trim(D%response) == 'anelastic-fQ8') then
        if (.not.global_finite .and. trim(D%response) == 'anelastic-Q4') &
             call fatal_local('RUN-Q4-001', &
             'Non-finite Q4 field or memory state detected at shutdown.', 'close_domain')
@@ -474,6 +534,8 @@ contains
             write(*,'(A,ES12.4,A,ES12.4)') &
             'fQ8 final state: max|field|=', global_field, ', max|memory|=', global_eta
     end if
+    if (rank == 0 .and. trim(D%response) == 'elastic') &
+         write(*,'(A,ES12.4)') 'Elastic final state: max|field|=', global_field
 
     if ( D%w_fault .eqv.  .true.) then
        if (in_fault_comm(1)) call destroy_fault(D%fault)

@@ -1,6 +1,9 @@
 if(NOT DEFINED STATE_LABEL)
   set(STATE_LABEL Q8)
 endif()
+if(NOT DEFINED REQUIRE_MEMORY)
+  set(REQUIRE_MEMORY TRUE)
+endif()
 
 # Tiny decomposition regressions may run inside an interactive allocation that
 # exposes only one scheduler slot. Allow an explicit test-only override without
@@ -39,6 +42,6 @@ endif()
 if(state1 MATCHES "max\\|field\\|= *0\\.0+E\\+00")
   message(FATAL_ERROR "${STATE_LABEL} dynamic fixture did not produce a nonzero field")
 endif()
-if(state1 MATCHES "max\\|memory\\|= *0\\.0+E\\+00")
+if(REQUIRE_MEMORY AND state1 MATCHES "max\\|memory\\|= *0\\.0+E\\+00")
   message(FATAL_ERROR "${STATE_LABEL} dynamic fixture did not evolve memory variables")
 endif()

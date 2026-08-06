@@ -1,7 +1,7 @@
 # Phase 2 scratch and allocation audit
 
 Date: 2026-08-06  
-Status: point-stencil scratch corrected; face-workspace ownership pending
+Status: point-stencil scratch corrected; persistent face ownership and accounting implemented
 
 ## Audit scope
 
@@ -50,9 +50,9 @@ python3 scripts/normalize_stencil_scratch.py \
 The script refuses to modify an unexpected generated-source layout unless it
 finds exactly 17 declarations and 53 allocation statements.
 
-## Remaining face-sized saved workspaces
+## Face-sized workspace audit
 
-The active RK path still contains face-sized `allocatable, save` buffers in:
+The original active RK path contained face-sized `allocatable, save` buffers in:
 
 - `RHS_Interior.f90`: physical boundary and interface SAT workspaces;
 - `CouplingForcing.f90`: rotated interface fields, hat fields, and MMS vectors.
@@ -68,8 +68,9 @@ thread stack. The safe target is persistent ownership by the block or interface
 object, allocated during domain initialization and released during domain
 cleanup.
 
-That ownership change will be a separate subphase with locked-interface,
-boundary, friction, and multi-block regressions.
+The active instances now have explicit block/interface ownership. Inactive
+alternative source files remain unchanged and are not compiled into the
+solver.
 
 ## Benign saved state
 
@@ -145,3 +146,50 @@ four-rank layout, while current decomposition safety rejects splitting these
 21-point blocks across four ranks because it violates the 20-point local-grid
 minimum. Punakha NVHPC CPU/OpenACC builds and a suitably sized locked numerical
 interface fixture remain required before closing this subphase.
+
+Each run now reports block, interface, maximum-per-rank, and aggregate MPI
+face-workspace allocation using actual allocated element counts and the
+working-real storage size:
+
+| Case | Rank-0 block | Rank-0 interface | Maximum/rank | Aggregate |
+|---|---:|---:|---:|---:|
+| Q8, one 41-cubed block | 0.346 MiB | 0.000 MiB | 0.346 MiB | 0.346 MiB |
+| TPV5, serial two 21-cubed blocks | 0.182 MiB | 0.141 MiB | 0.323 MiB | 0.323 MiB |
+
+## Punakha face-workspace qualification
+
+The persistent face-workspace ownership and accounting changes passed NVHPC
+26.5 qualification on Punakha on 2026-08-06:
+
+| Configuration | fQ8 unit | Q8 1/2-rank | Q4 1/2-rank | Total |
+|---|---:|---:|---:|---:|
+| `cpu-release` | pass | pass, 7.04 s | pass, 5.91 s | 12.96 s |
+| `gpu-h100` | pass | pass, 8.08 s | pass, 6.80 s | 14.88 s |
+
+All six selected checks passed. This closes the NVHPC compiler/runtime gate
+for persistent face ownership. Numerical kernels are not offloaded yet, so the
+`gpu-h100` result qualifies OpenACC compilation and runtime behavior rather
+than GPU numerical performance.
+
+## Order-6 finite-difference fixtures
+
+Three short, nonzero elastic moment-source fixtures now exercise every target
+order-6 operator family:
+
+- `test_elastic_traditional_o6.in`;
+- `test_elastic_upwind_o6.in`;
+- `test_elastic_upwind_drp_o6.in`.
+
+Each regression runs with one and two MPI ranks, requires successful shutdown,
+a finite nonzero elastic field, and an identical formatted global maximum
+across decompositions. Local GNU debug qualification passed on 2026-08-06:
+
+| Family | Test time | Final max field |
+|---|---:|---:|
+| traditional-6 | 1.18 s | 1.6623E+02 |
+| upwind-6 | 1.25 s | 1.6563E+02 |
+| upwind-DRP-6 | 1.60 s | 1.6567E+02 |
+
+The combined fQ8/Q8/Q4 and three-family suite passed all six tests in 7.68 s.
+These fixtures establish decomposition consistency, not cross-family equality;
+the operators are expected to produce slightly different numerical fields.

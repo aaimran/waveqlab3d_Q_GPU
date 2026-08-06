@@ -128,9 +128,29 @@ gpu-h100:    fQ8 pass; Q8 pass (7.83 s); Q4 pass (6.58 s); total 14.42 s
 Persistent ownership is now implemented for active block-boundary and
 interface face workspaces. The local GNU debug build, fQ8/Q8/Q4 suite, and
 46-step Cartesian and curvilinear serial interface smoke runs complete
-normally. Punakha NVHPC validation, a decomposition-compatible locked
-interface oracle, memory accounting, and explicit upwind/upwind-DRP fixtures
-remain open.
+normally. Persistent workspace accounting is active: the one-block 41-cubed
+Q8 case uses 0.346 MiB and the serial two-block 21-cubed TPV5 case uses 0.323
+MiB. Punakha NVHPC validation, a decomposition-compatible locked interface
+oracle, and explicit upwind/upwind-DRP fixtures remain open.
+
+Punakha NVHPC face-workspace qualification passed on 2026-08-06:
+
+```text
+cpu-release: fQ8 pass; Q8 pass (7.04 s); Q4 pass (5.91 s); total 12.96 s
+gpu-h100:    fQ8 pass; Q8 pass (8.08 s); Q4 pass (6.80 s); total 14.88 s
+```
+
+All six checks passed. Persistent face-workspace ownership and accounting are
+now qualified with GNU debug and NVHPC CPU/OpenACC builds. The next Phase 2
+gate is explicit traditional, upwind-6, and upwind-DRP-6 numerical fixtures,
+followed by a decomposition-compatible locked interface oracle.
+
+Explicit order-6 elastic fixtures are now implemented for traditional,
+upwind, and upwind-DRP operators. Each compares one-rank and two-rank global
+final-state diagnostics and rejects zero or non-finite fields. The local GNU
+debug suite passed all three fixtures plus fQ8/Q8/Q4 (6/6, 7.68 s). Punakha
+NVHPC qualification of the new fixtures and a decomposition-compatible locked
+interface oracle remain open.
 
 The IEEE signaling warnings printed after preflight occur during the
 intentional Fortran `STOP` after `MPI_Finalize`; no timestep was executed.
