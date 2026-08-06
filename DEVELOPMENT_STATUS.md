@@ -1,6 +1,6 @@
 # Development status
 
-Last updated: 2026-08-04
+Last updated: 2026-08-06
 
 ## Current phase
 
@@ -12,8 +12,8 @@ Phase 1: dual-backend build foundation.
   maintained in this repository; the original `waveqlab3d_Q` is independent.
 - Independent CPU debug and release build presets are available.
 - An NVHPC/OpenACC H100 preset is available.
-- The H100 preset pins the Fortran and MPI compiler to NVHPC's bundled HPC-X
-  `mpifort`, preventing accidental linkage to Punakha's Intel MPI environment.
+- The H100 preset pins compilation to `nvfortran` and MPI discovery to NVHPC's
+  bundled HPC-X `mpifort`, preventing accidental Intel MPI linkage.
 - CUDA-aware MPI is a separate opt-in and requires OpenACC.
 - GPU architecture and CPU-source location are configurable.
 - GNU builds accept the generated stencil module's lines beyond column 132;
@@ -28,9 +28,14 @@ Phase 1: dual-backend build foundation.
 
 ## Next gate
 
-1. Run both CPU presets on the target Linux system and freeze reference output.
-2. Compile `gpu-h100` with NVHPC, still without GPU numerical directives.
-3. Confirm that execution matches the oracle before adding device data.
+1. Build the standalone `cpu-release` preset on Punakha.
+2. Run one identical, deterministic short simulation with `cpu-release` and
+   `gpu-h100` in separate output directories.
+3. Compare return codes, receiver files, final-state diagnostics, and timing
+   metadata; archive the results as the first Punakha oracle.
+4. Run the applicable one-rank/two-rank regression subset.
+5. Only after equivalence passes, add accelerator runtime reporting and
+   node-local MPI-rank/GPU binding.
 
 ## Local verification
 
@@ -43,8 +48,25 @@ Verified on 2026-08-04 with GNU Fortran 14.2, Open MPI 5.0.7, and CMake
 - one-rank preflight passed for `inputfile/test_moment_tensor.in`;
 - configuration correctly rejected CUDA-aware MPI without OpenACC.
 
-NVHPC and an NVIDIA GPU are unavailable in this local environment, so the H100
-compiler and runtime gates remain pending for Punakha.
+Punakha H100 compiler verification completed on 2026-08-06:
+
+- NVIDIA HPC SDK 26.5 installed without sudo under `/scratch/aimran`;
+- OpenACC runtime detected one H100 using `-acc=gpu -gpu=cc90`;
+- standalone `gpu-h100` configuration selected NVHPC 26.5 and bundled HPC-X
+  MPI, with no Intel MPI linkage;
+- `waveqlab3d`, `pre_wql3d`, and the fQ8 unit executable built successfully;
+- `fq8_effective_response_unit` passed;
+- one-rank preflight for `inputfile/test_moment_tensor.in` passed.
+
+NVHPC regression diagnosis found and corrected a standards-conformance defect
+in `finish_mpi`: a compound logical expression referenced the absent optional
+`report_timing` argument and depended on non-guaranteed short-circuit
+evaluation. Q4 and Q8 both completed all timesteps and printed correct final
+state diagnostics before NVHPC faulted during normal shutdown. The corrected
+code resolves the optional argument before entering the compound condition.
+
+The IEEE signaling warnings printed after preflight occur during the
+intentional Fortran `STOP` after `MPI_Finalize`; no timestep was executed.
 
 Standalone-tree verification on 2026-08-06:
 

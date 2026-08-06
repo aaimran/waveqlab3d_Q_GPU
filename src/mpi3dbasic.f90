@@ -62,6 +62,7 @@ contains
     implicit none
 
     logical, intent(in), optional :: report_timing
+    logical :: do_report
     integer :: ierr, vals(8), days, hours, minutes
     real(kind = wp) :: elapsed, seconds
     character(64) :: end_time, elapsed_time
@@ -69,7 +70,13 @@ contains
     character(3),parameter :: mon(12) = (/ 'Jan','Feb','Mar','Apr','May','Jun', &
                                                            'Jul','Aug','Sep','Oct','Nov','Dec' /)
 
-    if (is_master() .and. (.not.present(report_timing) .or. report_timing)) then
+    ! Fortran does not guarantee short-circuit evaluation. Referencing the
+    ! absent optional argument in a compound .or. expression caused NVHPC to
+    ! dereference a null argument at normal shutdown.
+    do_report = .true.
+    if (present(report_timing)) do_report = report_timing
+
+    if (is_master() .and. do_report) then
        write(stdout,'(/,A,G20.10,A)') 'Total MPI time ', time_elapsed(), ' s'
 
        call date_and_time(values=vals)
