@@ -49,7 +49,7 @@ if(WQL3D_ENABLE_OPENACC)
     message(FATAL_ERROR
       "OpenACC requires NVHPC/nvfortran; detected ${CMAKE_Fortran_COMPILER_ID}")
   endif()
-  foreach(target waveqlab3d pre_wql3d openacc_runtime_probe)
+  foreach(target waveqlab3d pre_wql3d openacc_runtime_probe rk_vector_kernel_test)
     if(TARGET "${target}")
       target_compile_options("${target}" PRIVATE
         $<$<COMPILE_LANGUAGE:Fortran>:-acc=gpu;-gpu=${WQL3D_GPU_ARCH},lineinfo>)

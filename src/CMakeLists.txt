@@ -21,12 +21,16 @@ set(WQL3D_CUDA_AWARE_MPI_LITERAL ".false.")
 set(WQL3D_BACKEND_NAME "cpu")
 set(WQL3D_ACCELERATOR_RUNTIME accelerator_runtime_cpu.f90)
 set(WQL3D_DEVICE_DATA device_data_cpu.f90)
+set(WQL3D_RK_VECTOR_KERNELS rk_vector_cpu.f90)
+set(WQL3D_RK_VECTOR_TEST_DATA ../tests/rk_vector_test_data_cpu.f90)
 set(WQL3D_ALLOCATION_TRACKING allocation_tracking_disabled.f90)
 if(WQL3D_ENABLE_OPENACC)
     set(WQL3D_OPENACC_LITERAL ".true.")
     set(WQL3D_BACKEND_NAME "openacc")
     set(WQL3D_ACCELERATOR_RUNTIME accelerator_runtime_openacc.f90)
     set(WQL3D_DEVICE_DATA device_data_openacc.f90)
+    set(WQL3D_RK_VECTOR_KERNELS rk_vector_openacc.f90)
+    set(WQL3D_RK_VECTOR_TEST_DATA ../tests/rk_vector_test_data_openacc.f90)
 endif()
 
 if(WQL3D_ENABLE_CUDA_AWARE_MPI)
@@ -84,6 +88,7 @@ set(WQL3D_SRC
   datatypes.f90
   persistent_memory.f90
   ${WQL3D_DEVICE_DATA}
+  ${WQL3D_RK_VECTOR_KERNELS}
   domain.f90
   metrics.f90
   elastic.f90
@@ -167,6 +172,17 @@ target_include_directories(fq8_effective_response_test PRIVATE
   ${CMAKE_CURRENT_BINARY_DIR}/fq8_test_modules)
 add_test(NAME fq8_effective_response_unit
   COMMAND $<TARGET_FILE:fq8_effective_response_test>)
+
+add_executable(rk_vector_kernel_test
+  common.f90
+  ${WQL3D_RK_VECTOR_KERNELS}
+  ${WQL3D_RK_VECTOR_TEST_DATA}
+  ../tests/rk_vector_kernel_test.f90)
+set_target_properties(rk_vector_kernel_test PROPERTIES
+  Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/rk_vector_test_modules)
+target_include_directories(rk_vector_kernel_test PRIVATE
+  ${CMAKE_CURRENT_BINARY_DIR}/rk_vector_test_modules)
+add_test(NAME rk_vector_kernel_unit COMMAND $<TARGET_FILE:rk_vector_kernel_test>)
 
 if(WQL3D_ENABLE_OPENACC)
   add_executable(openacc_runtime_probe ../tests/openacc_runtime_probe.f90)

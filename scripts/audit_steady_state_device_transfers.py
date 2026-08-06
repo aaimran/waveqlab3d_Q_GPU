@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reject explicit device-data movement in the transitive RK call graph."""
+"""Confine explicit RK device movement to the qualified Phase 4 bridge."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from audit_steady_state_allocations import CALL_RE, Procedure, logical_code, par
 
 
 RUNTIME_TRANSFER = re.compile(
-    r"\bacc_(?:copyin|pcopyin|create|pcreate|copyout|delete|update|memcpy|map_data|unmap_data)\b",
+    r"\bacc_(?:copyin|pcopyin|create|pcreate|copyout|delete|update(?:_device|_self)?|memcpy|map_data|unmap_data)\b",
     re.I,
 )
 DIRECTIVE_TRANSFER = re.compile(r"^\s*!\$acc\s+(?:enter\s+data|exit\s+data|update)\b", re.I)
@@ -47,17 +47,24 @@ def main() -> int:
             pending.extend(by_name.get(called.lower(), ()))
 
     violations: list[str] = []
+    qualified_bridge: list[str] = []
     for procedure in sorted(reachable, key=lambda item: (str(item.path), item.start)):
         for offset, line in enumerate(procedure.lines):
             if RUNTIME_TRANSFER.search(logical_code(line)) or DIRECTIVE_TRANSFER.search(line):
-                violations.append(
-                    f"{procedure.path}:{procedure.start + offset}: {procedure.name}: {line.strip()}"
-                )
+                finding = f"{procedure.path}:{procedure.start + offset}: {procedure.name}: {line.strip()}"
+                if procedure.path.name == "rk_vector_openacc.f90":
+                    qualified_bridge.append(finding)
+                else:
+                    violations.append(finding)
     if violations:
-        print("FAIL: explicit device transfer is reachable from time_step_RK")
+        print("FAIL: unqualified explicit device transfer is reachable from time_step_RK")
         print("\n".join(violations))
         return 1
-    print(f"PASS: {len(reachable)} RK-reachable procedures contain no explicit device transfer")
+    if len(qualified_bridge) != 5:
+        print(f"FAIL: expected 5 qualified Phase 4 transfer calls, found {len(qualified_bridge)}")
+        print("\n".join(qualified_bridge))
+        return 1
+    print(f"PASS: {len(reachable)} RK-reachable procedures confine 5 explicit transfers to the Phase 4 bridge")
     return 0
 
 

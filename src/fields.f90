@@ -4,6 +4,7 @@ module fields
 
   use common, only : wp
   use datatypes, only : block_type, block_fields
+  use rk_vector_kernels, only : scale_rate_array, update_state_array
    use, intrinsic :: ieee_arithmetic
   implicit none
 
@@ -57,97 +58,96 @@ contains
     real(kind = wp),intent(in) :: A
     
 
-    F%F%DF = A*F%F%DF
-
+    call scale_rate_array(F%F%DF, A)
       if (F%M%anelastic) then
-         F%M%Deta4 = A*F%M%Deta4
-         F%M%Deta5 = A*F%M%Deta5
-         F%M%Deta6 = A*F%M%Deta6
-         F%M%Deta7 = A*F%M%Deta7
-         F%M%Deta8 = A*F%M%Deta8
-         F%M%Deta9 = A*F%M%Deta9
+         call scale_rate_array(F%M%Deta4, A)
+         call scale_rate_array(F%M%Deta5, A)
+         call scale_rate_array(F%M%Deta6, A)
+         call scale_rate_array(F%M%Deta7, A)
+         call scale_rate_array(F%M%Deta8, A)
+         call scale_rate_array(F%M%Deta9, A)
       end if
       if (F%M%anelastic_Q) then
-         F%M%Deta4Q = A*F%M%Deta4Q
-         F%M%Deta5Q = A*F%M%Deta5Q
-         F%M%Deta6Q = A*F%M%Deta6Q
-         F%M%Deta7Q = A*F%M%Deta7Q
-         F%M%Deta8Q = A*F%M%Deta8Q
-         F%M%Deta9Q = A*F%M%Deta9Q
+         call scale_rate_array(F%M%Deta4Q, A)
+         call scale_rate_array(F%M%Deta5Q, A)
+         call scale_rate_array(F%M%Deta6Q, A)
+         call scale_rate_array(F%M%Deta7Q, A)
+         call scale_rate_array(F%M%Deta8Q, A)
+         call scale_rate_array(F%M%Deta9Q, A)
       end if
       if (F%M%anelastic_Q8) then
-         F%M%Deta4Q8 = A*F%M%Deta4Q8
-         F%M%Deta5Q8 = A*F%M%Deta5Q8
-         F%M%Deta6Q8 = A*F%M%Deta6Q8
-         F%M%Deta7Q8 = A*F%M%Deta7Q8
-         F%M%Deta8Q8 = A*F%M%Deta8Q8
-         F%M%Deta9Q8 = A*F%M%Deta9Q8
+         call scale_rate_array(F%M%Deta4Q8, A)
+         call scale_rate_array(F%M%Deta5Q8, A)
+         call scale_rate_array(F%M%Deta6Q8, A)
+         call scale_rate_array(F%M%Deta7Q8, A)
+         call scale_rate_array(F%M%Deta8Q8, A)
+         call scale_rate_array(F%M%Deta9Q8, A)
       end if
       if (allocated(F%M%eta4Qf8)) then
-         F%M%Deta4Qf8 = A*F%M%Deta4Qf8
-         F%M%Deta5Qf8 = A*F%M%Deta5Qf8
-         F%M%Deta6Qf8 = A*F%M%Deta6Qf8
-         F%M%Deta7Qf8 = A*F%M%Deta7Qf8
-         F%M%Deta8Qf8 = A*F%M%Deta8Qf8
-         F%M%Deta9Qf8 = A*F%M%Deta9Qf8
+         call scale_rate_array(F%M%Deta4Qf8, A)
+         call scale_rate_array(F%M%Deta5Qf8, A)
+         call scale_rate_array(F%M%Deta6Qf8, A)
+         call scale_rate_array(F%M%Deta7Qf8, A)
+         call scale_rate_array(F%M%Deta8Qf8, A)
+         call scale_rate_array(F%M%Deta9Qf8, A)
       else if (F%M%anelastic_Qf) then
-         F%M%Deta4Qf = A*F%M%Deta4Qf
-         F%M%Deta5Qf = A*F%M%Deta5Qf
-         F%M%Deta6Qf = A*F%M%Deta6Qf
-         F%M%Deta7Qf = A*F%M%Deta7Qf
-         F%M%Deta8Qf = A*F%M%Deta8Qf
-         F%M%Deta9Qf = A*F%M%Deta9Qf
+         call scale_rate_array(F%M%Deta4Qf, A)
+         call scale_rate_array(F%M%Deta5Qf, A)
+         call scale_rate_array(F%M%Deta6Qf, A)
+         call scale_rate_array(F%M%Deta7Qf, A)
+         call scale_rate_array(F%M%Deta8Qf, A)
+         call scale_rate_array(F%M%Deta9Qf, A)
       end if
       if (allocated(F%M%eta4_8M)) then
-         F%M%Deta4_8M = A*F%M%Deta4_8M
-         F%M%Deta5_8M = A*F%M%Deta5_8M
-         F%M%Deta6_8M = A*F%M%Deta6_8M
-         F%M%Deta7_8M = A*F%M%Deta7_8M
-         F%M%Deta8_8M = A*F%M%Deta8_8M
-         F%M%Deta9_8M = A*F%M%Deta9_8M
+         call scale_rate_array(F%M%Deta4_8M, A)
+         call scale_rate_array(F%M%Deta5_8M, A)
+         call scale_rate_array(F%M%Deta6_8M, A)
+         call scale_rate_array(F%M%Deta7_8M, A)
+         call scale_rate_array(F%M%Deta8_8M, A)
+         call scale_rate_array(F%M%Deta9_8M, A)
       else if (F%M%anelastic_const_Q_4M) then
-         F%M%Deta4_4M = A*F%M%Deta4_4M
-         F%M%Deta5_4M = A*F%M%Deta5_4M
-         F%M%Deta6_4M = A*F%M%Deta6_4M
-         F%M%Deta7_4M = A*F%M%Deta7_4M
-         F%M%Deta8_4M = A*F%M%Deta8_4M
-         F%M%Deta9_4M = A*F%M%Deta9_4M
+         call scale_rate_array(F%M%Deta4_4M, A)
+         call scale_rate_array(F%M%Deta5_4M, A)
+         call scale_rate_array(F%M%Deta6_4M, A)
+         call scale_rate_array(F%M%Deta7_4M, A)
+         call scale_rate_array(F%M%Deta8_4M, A)
+         call scale_rate_array(F%M%Deta9_4M, A)
       end if
 
     if( F%PMLB(1)%pml .EQV. .TRUE.) then
        if(F%G%C%mq .le.  F%PMLB(1)%N_pml) then
-          F%PMLB(1)%DQ = A*F%PMLB(1)%DQ
+          call scale_rate_array(F%PMLB(1)%DQ, A)
        end if
     end if
 
     
     if( F%PMLB(2)%pml .EQV. .TRUE.) then
         if(F%G%C%pq .ge. (F%G%C%nq- F%PMLB(2)%N_pml+1)) then
-           F%PMLB(2)%DQ = A*F%PMLB(2)%DQ
+           call scale_rate_array(F%PMLB(2)%DQ, A)
         end if
      end if
      
      if( F%PMLB(3)%pml .EQV. .TRUE.) then
         if(F%G%C%mr .le. F%PMLB(3)%N_pml) then
-           F%PMLB(3)%DQ = A*F%PMLB(3)%DQ
+           call scale_rate_array(F%PMLB(3)%DQ, A)
         end if
      end if
      
      if( F%PMLB(4)%pml .EQV. .TRUE.) then
          if(F%G%C%pr .ge. (F%G%C%nr- F%PMLB(4)%N_pml+1)) then
-            F%PMLB(4)%DQ = A*F%PMLB(4)%DQ
+            call scale_rate_array(F%PMLB(4)%DQ, A)
          end if
      end if
      
      if( F%PMLB(5)%pml .EQV. .TRUE.) then
         if(F%G%C%ms .le.  F%PMLB(5)%N_pml) then
-           F%PMLB(5)%DQ = A*F%PMLB(5)%DQ
+           call scale_rate_array(F%PMLB(5)%DQ, A)
         end if
      end if
      
      if( F%PMLB(6)%pml .EQV. .TRUE.) then
          if(F%G%C%ps .ge. (F%G%C%ns- F%PMLB(6)%N_pml+1)) then
-            F%PMLB(6)%DQ = A*F%PMLB(6)%DQ
+            call scale_rate_array(F%PMLB(6)%DQ, A)
          end if
      end if
      
@@ -164,97 +164,96 @@ contains
     type(block_type),intent(inout) :: F
     real(kind = wp),intent(in) :: dt
 
-    F%F%F = F%F%F + dt*F%F%DF
-
+    call update_state_array(F%F%F, F%F%DF, dt)
       if (F%M%anelastic) then
-         F%M%eta4 = F%M%eta4 + dt*F%M%Deta4
-         F%M%eta5 = F%M%eta5 + dt*F%M%Deta5
-         F%M%eta6 = F%M%eta6 + dt*F%M%Deta6
-         F%M%eta7 = F%M%eta7 + dt*F%M%Deta7
-         F%M%eta8 = F%M%eta8 + dt*F%M%Deta8
-         F%M%eta9 = F%M%eta9 + dt*F%M%Deta9
+         call update_state_array(F%M%eta4, F%M%Deta4, dt)
+         call update_state_array(F%M%eta5, F%M%Deta5, dt)
+         call update_state_array(F%M%eta6, F%M%Deta6, dt)
+         call update_state_array(F%M%eta7, F%M%Deta7, dt)
+         call update_state_array(F%M%eta8, F%M%Deta8, dt)
+         call update_state_array(F%M%eta9, F%M%Deta9, dt)
       end if
       if (F%M%anelastic_Q) then
-         F%M%eta4Q = F%M%eta4Q + dt*F%M%Deta4Q
-         F%M%eta5Q = F%M%eta5Q + dt*F%M%Deta5Q
-         F%M%eta6Q = F%M%eta6Q + dt*F%M%Deta6Q
-         F%M%eta7Q = F%M%eta7Q + dt*F%M%Deta7Q
-         F%M%eta8Q = F%M%eta8Q + dt*F%M%Deta8Q
-         F%M%eta9Q = F%M%eta9Q + dt*F%M%Deta9Q
+         call update_state_array(F%M%eta4Q, F%M%Deta4Q, dt)
+         call update_state_array(F%M%eta5Q, F%M%Deta5Q, dt)
+         call update_state_array(F%M%eta6Q, F%M%Deta6Q, dt)
+         call update_state_array(F%M%eta7Q, F%M%Deta7Q, dt)
+         call update_state_array(F%M%eta8Q, F%M%Deta8Q, dt)
+         call update_state_array(F%M%eta9Q, F%M%Deta9Q, dt)
       end if
       if (F%M%anelastic_Q8) then
-         F%M%eta4Q8 = F%M%eta4Q8 + dt*F%M%Deta4Q8
-         F%M%eta5Q8 = F%M%eta5Q8 + dt*F%M%Deta5Q8
-         F%M%eta6Q8 = F%M%eta6Q8 + dt*F%M%Deta6Q8
-         F%M%eta7Q8 = F%M%eta7Q8 + dt*F%M%Deta7Q8
-         F%M%eta8Q8 = F%M%eta8Q8 + dt*F%M%Deta8Q8
-         F%M%eta9Q8 = F%M%eta9Q8 + dt*F%M%Deta9Q8
+         call update_state_array(F%M%eta4Q8, F%M%Deta4Q8, dt)
+         call update_state_array(F%M%eta5Q8, F%M%Deta5Q8, dt)
+         call update_state_array(F%M%eta6Q8, F%M%Deta6Q8, dt)
+         call update_state_array(F%M%eta7Q8, F%M%Deta7Q8, dt)
+         call update_state_array(F%M%eta8Q8, F%M%Deta8Q8, dt)
+         call update_state_array(F%M%eta9Q8, F%M%Deta9Q8, dt)
       end if
       if (allocated(F%M%eta4Qf8)) then
-         F%M%eta4Qf8 = F%M%eta4Qf8 + dt*F%M%Deta4Qf8
-         F%M%eta5Qf8 = F%M%eta5Qf8 + dt*F%M%Deta5Qf8
-         F%M%eta6Qf8 = F%M%eta6Qf8 + dt*F%M%Deta6Qf8
-         F%M%eta7Qf8 = F%M%eta7Qf8 + dt*F%M%Deta7Qf8
-         F%M%eta8Qf8 = F%M%eta8Qf8 + dt*F%M%Deta8Qf8
-         F%M%eta9Qf8 = F%M%eta9Qf8 + dt*F%M%Deta9Qf8
+         call update_state_array(F%M%eta4Qf8, F%M%Deta4Qf8, dt)
+         call update_state_array(F%M%eta5Qf8, F%M%Deta5Qf8, dt)
+         call update_state_array(F%M%eta6Qf8, F%M%Deta6Qf8, dt)
+         call update_state_array(F%M%eta7Qf8, F%M%Deta7Qf8, dt)
+         call update_state_array(F%M%eta8Qf8, F%M%Deta8Qf8, dt)
+         call update_state_array(F%M%eta9Qf8, F%M%Deta9Qf8, dt)
       else if (F%M%anelastic_Qf) then
-         F%M%eta4Qf = F%M%eta4Qf + dt*F%M%Deta4Qf
-         F%M%eta5Qf = F%M%eta5Qf + dt*F%M%Deta5Qf
-         F%M%eta6Qf = F%M%eta6Qf + dt*F%M%Deta6Qf
-         F%M%eta7Qf = F%M%eta7Qf + dt*F%M%Deta7Qf
-         F%M%eta8Qf = F%M%eta8Qf + dt*F%M%Deta8Qf
-         F%M%eta9Qf = F%M%eta9Qf + dt*F%M%Deta9Qf
+         call update_state_array(F%M%eta4Qf, F%M%Deta4Qf, dt)
+         call update_state_array(F%M%eta5Qf, F%M%Deta5Qf, dt)
+         call update_state_array(F%M%eta6Qf, F%M%Deta6Qf, dt)
+         call update_state_array(F%M%eta7Qf, F%M%Deta7Qf, dt)
+         call update_state_array(F%M%eta8Qf, F%M%Deta8Qf, dt)
+         call update_state_array(F%M%eta9Qf, F%M%Deta9Qf, dt)
       end if
       if (allocated(F%M%eta4_8M)) then
-         F%M%eta4_8M = F%M%eta4_8M + dt*F%M%Deta4_8M
-         F%M%eta5_8M = F%M%eta5_8M + dt*F%M%Deta5_8M
-         F%M%eta6_8M = F%M%eta6_8M + dt*F%M%Deta6_8M
-         F%M%eta7_8M = F%M%eta7_8M + dt*F%M%Deta7_8M
-         F%M%eta8_8M = F%M%eta8_8M + dt*F%M%Deta8_8M
-         F%M%eta9_8M = F%M%eta9_8M + dt*F%M%Deta9_8M
+         call update_state_array(F%M%eta4_8M, F%M%Deta4_8M, dt)
+         call update_state_array(F%M%eta5_8M, F%M%Deta5_8M, dt)
+         call update_state_array(F%M%eta6_8M, F%M%Deta6_8M, dt)
+         call update_state_array(F%M%eta7_8M, F%M%Deta7_8M, dt)
+         call update_state_array(F%M%eta8_8M, F%M%Deta8_8M, dt)
+         call update_state_array(F%M%eta9_8M, F%M%Deta9_8M, dt)
       else if (F%M%anelastic_const_Q_4M) then
-         F%M%eta4_4M = F%M%eta4_4M + dt*F%M%Deta4_4M
-         F%M%eta5_4M = F%M%eta5_4M + dt*F%M%Deta5_4M
-         F%M%eta6_4M = F%M%eta6_4M + dt*F%M%Deta6_4M
-         F%M%eta7_4M = F%M%eta7_4M + dt*F%M%Deta7_4M
-         F%M%eta8_4M = F%M%eta8_4M + dt*F%M%Deta8_4M
-         F%M%eta9_4M = F%M%eta9_4M + dt*F%M%Deta9_4M
+         call update_state_array(F%M%eta4_4M, F%M%Deta4_4M, dt)
+         call update_state_array(F%M%eta5_4M, F%M%Deta5_4M, dt)
+         call update_state_array(F%M%eta6_4M, F%M%Deta6_4M, dt)
+         call update_state_array(F%M%eta7_4M, F%M%Deta7_4M, dt)
+         call update_state_array(F%M%eta8_4M, F%M%Deta8_4M, dt)
+         call update_state_array(F%M%eta9_4M, F%M%Deta9_4M, dt)
       end if
 
     if( F%PMLB(1)%pml .EQV. .TRUE.) then
        if(F%G%C%mq .le. F%PMLB(1)%N_pml) then
-         F%PMLB(1)%Q = F%PMLB(1)%Q + dt*F%PMLB(1)%DQ
+         call update_state_array(F%PMLB(1)%Q, F%PMLB(1)%DQ, dt)
        end if
     end if
 
     
     if( F%PMLB(2)%pml .EQV. .TRUE.) then
         if(F%G%C%pq .ge. (F%G%C%nq- F%PMLB(2)%N_pml+1)) then
-          F%PMLB(2)%Q = F%PMLB(2)%Q + dt*F%PMLB(2)%DQ  
+          call update_state_array(F%PMLB(2)%Q, F%PMLB(2)%DQ, dt)
         end if
      end if
      
      if( F%PMLB(3)%pml .EQV. .TRUE.) then
         if(F%G%C%mr .le.  F%PMLB(3)%N_pml) then
-           F%PMLB(3)%Q = F%PMLB(3)%Q + dt*F%PMLB(3)%DQ
+           call update_state_array(F%PMLB(3)%Q, F%PMLB(3)%DQ, dt)
         end if
      end if
      
      if( F%PMLB(4)%pml .EQV. .TRUE.) then
          if(F%G%C%pr .ge. (F%G%C%nr- F%PMLB(4)%N_pml+1)) then
-            F%PMLB(4)%Q = F%PMLB(4)%Q + dt*F%PMLB(4)%DQ 
+            call update_state_array(F%PMLB(4)%Q, F%PMLB(4)%DQ, dt)
          end if
      end if
      
      if( F%PMLB(5)%pml .EQV. .TRUE.) then
         if(F%G%C%ms .le.  F%PMLB(5)%N_pml) then
-           F%PMLB(5)%Q = F%PMLB(5)%Q + dt*F%PMLB(5)%DQ
+           call update_state_array(F%PMLB(5)%Q, F%PMLB(5)%DQ, dt)
         end if
      end if
      
      if( F%PMLB(6)%pml .EQV. .TRUE.) then
          if(F%G%C%ps .ge. (F%G%C%ns- F%PMLB(6)%N_pml+1)) then
-            F%PMLB(6)%Q = F%PMLB(6)%Q + dt*F%PMLB(6)%DQ
+            call update_state_array(F%PMLB(6)%Q, F%PMLB(6)%DQ, dt)
          end if
      end if
 
