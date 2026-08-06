@@ -23,7 +23,7 @@ contains
     real(kind = wp), dimension(:), intent(out) :: Ju_x            ! metric coefficients
 
     real(kind = wp), dimension(:,:,:,:), allocatable, intent(in) :: X_x   ! the grid
-    real(kind = wp), dimension(:), allocatable, save :: Jq_xU, Jr_xU, Js_xU            ! work array
+    real(kind = wp), dimension(9) :: Jq_xU, Jr_xU, Js_xU! work array
     real(kind = wp) :: hx, hy, hz                      ! spatial steps discertizing the unit cube
     integer :: n, nx, ny, nz
 
@@ -38,9 +38,6 @@ contains
     hz = G%hs
 
     ! work arrays:
-    if (.not. allocated(Jq_xU)) allocate(Jq_xU(n))
-    if (.not. allocated(Jr_xU)) allocate(Jr_xU(n))
-    if (.not. allocated(Js_xU)) allocate(Js_xU(n))
 
     !Ju_x = 0.0_wp*Ju_x
 
@@ -830,7 +827,7 @@ contains
  
      !input grid and output derivatives 
      real(kind = wp),       dimension(:,:,:,:), allocatable, intent(in) :: X_x                  ! the grid
-     real(kind = wp),       dimension(:),       allocatable, save       :: Jq_xU, Jr_xU, Js_xU  ! work array
+     real(kind = wp), dimension(9) :: Jq_xU, Jr_xU, Js_xU! work array
 
      !working parameters 
      real(kind = wp)        :: hx, hy, hz       ! spatial steps discertizing the unit cube
@@ -848,9 +845,6 @@ contains
      hz = G%hs
  
      ! work arrays:
-     if (.not. allocated(Jq_xU)) allocate(Jq_xU(n))
-     if (.not. allocated(Jr_xU)) allocate(Jr_xU(n))
-     if (.not. allocated(Js_xU)) allocate(Js_xU(n))
 
      !=========================================================================================================================
      !=========================================================================================================================
@@ -1140,7 +1134,7 @@ subroutine JJU_x3_upwind(x, y, z, F, G, X_x, Ju_x)
  
      !input grid and output derivatives 
      real(kind = wp),       dimension(:,:,:,:), allocatable, intent(in) :: X_x                  ! the grid
-     real(kind = wp),       dimension(:),       allocatable, save       :: Jq_xU, Jr_xU, Js_xU  ! work array
+     real(kind = wp), dimension(9) :: Jq_xU, Jr_xU, Js_xU! work array
 
      !working parameters 
      real(kind = wp)        :: hx, hy, hz       ! spatial steps discertizing the unit cube
@@ -1158,9 +1152,6 @@ subroutine JJU_x3_upwind(x, y, z, F, G, X_x, Ju_x)
      hz = G%hs
  
      ! work arrays:
-     if (.not. allocated(Jq_xU)) allocate(Jq_xU(n))
-     if (.not. allocated(Jr_xU)) allocate(Jr_xU(n))
-     if (.not. allocated(Js_xU)) allocate(Js_xU(n))
 
      !=========================================================================================================================
      !=========================================================================================================================
@@ -1463,7 +1454,7 @@ subroutine JJU_x4_upwind(x, y, z, F, G, X_x, Ju_x)
  
      !input grid and output derivatives 
      real(kind = wp),       dimension(:,:,:,:), allocatable, intent(in) :: X_x                  ! the grid
-     real(kind = wp),       dimension(:),       allocatable, save       :: Jq_xU, Jr_xU, Js_xU  ! work array
+     real(kind = wp), dimension(9) :: Jq_xU, Jr_xU, Js_xU! work array
 
      !working parameters 
      real(kind = wp)        :: hx, hy, hz       ! spatial steps discertizing the unit cube
@@ -1481,9 +1472,6 @@ subroutine JJU_x4_upwind(x, y, z, F, G, X_x, Ju_x)
      hz = G%hs
  
      ! work arrays:
-     if (.not. allocated(Jq_xU)) allocate(Jq_xU(n))
-     if (.not. allocated(Jr_xU)) allocate(Jr_xU(n))
-     if (.not. allocated(Js_xU)) allocate(Js_xU(n))
 
      !=========================================================================================================================
      !=========================================================================================================================
@@ -2061,7 +2049,7 @@ end subroutine JJU_x4_upwind
      real(kind = wp), dimension(:), intent(out) :: Ju_x            ! metric coefficients
  
      real(kind = wp), dimension(:,:,:,:), allocatable, intent(in) :: X_x   ! the grid
-     real(kind = wp), dimension(:), allocatable, save :: Jq_xU, Jr_xU, Js_xU            ! work array
+     real(kind = wp), dimension(9) :: Jq_xU, Jr_xU, Js_xU! work array
      real(kind = wp) :: hx, hy, hz                      ! spatial steps discertizing the unit cube
      integer :: n, nx, ny, nz
  
@@ -2076,9 +2064,6 @@ end subroutine JJU_x4_upwind
      hz = G%hs
  
      ! work arrays:
-     if (.not. allocated(Jq_xU)) allocate(Jq_xU(n))
-     if (.not. allocated(Jr_xU)) allocate(Jr_xU(n))
-     if (.not. allocated(Js_xU)) allocate(Js_xU(n))
  
      !Ju_x = 0.0_wp*Ju_x
  
@@ -2692,7 +2677,7 @@ end subroutine JJU_x4_upwind
      real(kind = wp), dimension(:), intent(out) :: Ju_x            ! metric coefficients
  
      real(kind = wp), dimension(:,:,:,:), allocatable, intent(in) :: X_x   ! the grid
-     real(kind = wp), dimension(:), allocatable, save :: Jq_xU, Jr_xU, Js_xU            ! work array
+     real(kind = wp), dimension(9) :: Jq_xU, Jr_xU, Js_xU! work array
      real(kind = wp) :: hx, hy, hz                      ! spatial steps discertizing the unit cube
      integer :: n, nx, ny, nz
  
@@ -2707,9 +2692,6 @@ end subroutine JJU_x4_upwind
      hz = G%hs
  
      ! work arrays:
-     if (.not. allocated(Jq_xU)) allocate(Jq_xU(n))
-     if (.not. allocated(Jr_xU)) allocate(Jr_xU(n))
-     if (.not. allocated(Js_xU)) allocate(Js_xU(n))
  
      !Ju_x = 0.0_wp*Ju_x
  
@@ -3722,7 +3704,7 @@ subroutine JJU_x6_upwind2(x, y, z, F, G, X_x, Ju_x)
   real(kind = wp), dimension(:), intent(out) :: Ju_x            ! metric coefficients
 
   real(kind = wp), dimension(:,:,:,:), allocatable, intent(in) :: X_x   ! the grid
-  real(kind = wp), dimension(:), allocatable, save :: Jq_xU, Jr_xU, Js_xU, Ufx, Ubx             ! work array
+  real(kind = wp), dimension(9) :: Jq_xU, Jr_xU, Js_xU, Ufx, Ubx! work array
   real(kind = wp) :: hx, hy, hz                      ! spatial steps discertizing the unit cube
   integer :: n, nx, ny, nz
   integer :: mbx, mby, mbz, pbx, pby, pbz
@@ -3747,12 +3729,7 @@ subroutine JJU_x6_upwind2(x, y, z, F, G, X_x, Ju_x)
 
 
   ! work arrays:
-  if (.not. allocated(Jq_xU)) allocate(Jq_xU(n))
-  if (.not. allocated(Jr_xU)) allocate(Jr_xU(n))
-  if (.not. allocated(Js_xU)) allocate(Js_xU(n))
 
- if (.not. allocated(Ufx)) allocate(Ufx(n))
- if (.not. allocated(Ubx)) allocate(Ubx(n))
 
   !Ju_x = 0.0_wp*Ju_x
   Ufx = 0.0_wp*Ufx
@@ -3826,7 +3803,7 @@ subroutine JJU_x7_upwind(x, y, z, F, G, X_x, Ju_x)
  
      !input grid and output derivatives 
      real(kind = wp),       dimension(:,:,:,:), allocatable, intent(in) :: X_x                  ! the grid
-     real(kind = wp),       dimension(:),       allocatable, save       :: Jq_xU, Jr_xU, Js_xU  ! work array
+     real(kind = wp), dimension(9) :: Jq_xU, Jr_xU, Js_xU! work array
 
      !working parameters 
      real(kind = wp)        :: hx, hy, hz       ! spatial steps discertizing the unit cube
@@ -3844,9 +3821,6 @@ subroutine JJU_x7_upwind(x, y, z, F, G, X_x, Ju_x)
      hz = G%hs
  
      ! work arrays:
-     if (.not. allocated(Jq_xU)) allocate(Jq_xU(n))
-     if (.not. allocated(Jr_xU)) allocate(Jr_xU(n))
-     if (.not. allocated(Js_xU)) allocate(Js_xU(n))
 
      !=========================================================================================================================
      !=========================================================================================================================
@@ -5005,7 +4979,7 @@ subroutine JJU_x8_upwind(x, y, z, F, G, X_x, Ju_x)
  
      !input grid and output derivatives 
      real(kind = wp),       dimension(:,:,:,:), allocatable, intent(in) :: X_x                  ! the grid
-     real(kind = wp),       dimension(:),       allocatable, save       :: Jq_xU, Jr_xU, Js_xU  ! work array
+     real(kind = wp), dimension(9) :: Jq_xU, Jr_xU, Js_xU! work array
 
      !working parameters 
      real(kind = wp)        :: hx, hy, hz       ! spatial steps discertizing the unit cube
@@ -5023,9 +4997,6 @@ subroutine JJU_x8_upwind(x, y, z, F, G, X_x, Ju_x)
      hz = G%hs
  
      ! work arrays:
-     if (.not. allocated(Jq_xU)) allocate(Jq_xU(n))
-     if (.not. allocated(Jr_xU)) allocate(Jr_xU(n))
-     if (.not. allocated(Js_xU)) allocate(Js_xU(n))
 
      !=========================================================================================================================
      !=========================================================================================================================
@@ -6493,7 +6464,7 @@ subroutine JJU_x9_upwind(x, y, z, F, G, X_x, Ju_x)
  
      !input grid and output derivatives 
      real(kind = wp),       dimension(:,:,:,:), allocatable, intent(in) :: X_x                  ! the grid
-     real(kind = wp),       dimension(:),       allocatable, save       :: Jq_xU, Jr_xU, Js_xU  ! work array
+     real(kind = wp), dimension(9) :: Jq_xU, Jr_xU, Js_xU! work array
 
      !working parameters 
      real(kind = wp)        :: hx, hy, hz       ! spatial steps discertizing the unit cube
@@ -6511,9 +6482,6 @@ subroutine JJU_x9_upwind(x, y, z, F, G, X_x, Ju_x)
      hz = G%hs
  
      ! work arrays:
-     if (.not. allocated(Jq_xU)) allocate(Jq_xU(n))
-     if (.not. allocated(Jr_xU)) allocate(Jr_xU(n))
-     if (.not. allocated(Js_xU)) allocate(Js_xU(n))
 
      !=========================================================================================================================
      !=========================================================================================================================
@@ -8013,7 +7981,7 @@ type(block_grid_t), intent(in) :: G
 real(kind = wp), dimension(:), intent(out) :: Ju_x            
 
 real(kind = wp), dimension(:,:,:,:), allocatable, intent(in) :: X_x   
-real(kind = wp), dimension(:), allocatable, save :: Jq_xU, Jr_xU, Js_xU            
+real(kind = wp), dimension(9) :: Jq_xU, Jr_xU, Js_xU
 real(kind = wp) :: hx, hy, hz                      
 integer :: n, nx, ny, nz
 
@@ -8028,9 +7996,6 @@ hy = G%hr
 hz = G%hs
 
 ! work arrays:
-if (.not. allocated(Jq_xU)) allocate(Jq_xU(n))
-if (.not. allocated(Jr_xU)) allocate(Jr_xU(n))
-if (.not. allocated(Js_xU)) allocate(Js_xU(n))
 
 !=================================================================================================
 Jq_xU = 0.0_wp*Jq_xU
@@ -8611,7 +8576,7 @@ type(block_grid_t), intent(in) :: G
 real(kind = wp), dimension(:), intent(out) :: Ju_x            
 
 real(kind = wp), dimension(:,:,:,:), allocatable, intent(in) :: X_x  
-real(kind = wp), dimension(:), allocatable, save :: Jq_xU, Jr_xU, Js_xU            
+real(kind = wp), dimension(9) :: Jq_xU, Jr_xU, Js_xU
 real(kind = wp) :: hx, hy, hz                      
 integer :: n, nx, ny, nz
 
@@ -8626,9 +8591,6 @@ hy = G%hr
 hz = G%hs
 
 ! work arrays:
-if (.not. allocated(Jq_xU)) allocate(Jq_xU(n))
-if (.not. allocated(Jr_xU)) allocate(Jr_xU(n))
-if (.not. allocated(Js_xU)) allocate(Js_xU(n))
 
 !=================================================================================================
 Jq_xU = 0.0_wp*Jq_xU
@@ -9610,7 +9572,7 @@ type(block_grid_t), intent(in) :: G
 real(kind = wp), dimension(:), intent(out) :: Ju_x            
 
 real(kind = wp), dimension(:,:,:,:), allocatable, intent(in) :: X_x  
-real(kind = wp), dimension(:), allocatable, save :: Jq_xU, Jr_xU, Js_xU            
+real(kind = wp), dimension(9) :: Jq_xU, Jr_xU, Js_xU
 real(kind = wp) :: hx, hy, hz                      
 integer :: n, nx, ny, nz
 
@@ -9625,9 +9587,6 @@ hy = G%hr
 hz = G%hs
 
 ! work arrays:
-if (.not. allocated(Jq_xU)) allocate(Jq_xU(n))
-if (.not. allocated(Jr_xU)) allocate(Jr_xU(n))
-if (.not. allocated(Js_xU)) allocate(Js_xU(n))
 
 !=================================================================================================
 Jq_xU = 0.0_wp*Jq_xU
@@ -10609,7 +10568,7 @@ subroutine JJU_x6_upwind_drp(x, y, z, F, G, X_x, Ju_x)
      real(kind = wp), dimension(:), intent(out) :: Ju_x           
  
      real(kind = wp), dimension(:,:,:,:), allocatable, intent(in) :: X_x   
-     real(kind = wp), dimension(:), allocatable, save :: Jq_xU, Jr_xU, Js_xU           
+     real(kind = wp), dimension(9) :: Jq_xU, Jr_xU, Js_xU
      real(kind = wp) :: hx, hy, hz                      
      integer :: n, nx, ny, nz
  
@@ -10624,9 +10583,6 @@ subroutine JJU_x6_upwind_drp(x, y, z, F, G, X_x, Ju_x)
      hz = G%hs
  
      ! work arrays:
-     if (.not. allocated(Jq_xU)) allocate(Jq_xU(n))
-     if (.not. allocated(Jr_xU)) allocate(Jr_xU(n))
-     if (.not. allocated(Js_xU)) allocate(Js_xU(n))
 !=================================================================================================
 Jq_xU = 0.0_wp*Jq_xU
 
@@ -12117,7 +12073,7 @@ subroutine JJU_x7_upwind_drp(x, y, z, F, G, X_x, Ju_x)
      real(kind = wp), dimension(:), intent(out) :: Ju_x           
  
      real(kind = wp), dimension(:,:,:,:), allocatable, intent(in) :: X_x   
-     real(kind = wp), dimension(:), allocatable, save :: Jq_xU, Jr_xU, Js_xU           
+     real(kind = wp), dimension(9) :: Jq_xU, Jr_xU, Js_xU
      real(kind = wp) :: hx, hy, hz                      
      integer :: n, nx, ny, nz
  
@@ -12132,9 +12088,6 @@ subroutine JJU_x7_upwind_drp(x, y, z, F, G, X_x, Ju_x)
      hz = G%hs
  
      ! work arrays:
-     if (.not. allocated(Jq_xU)) allocate(Jq_xU(n))
-     if (.not. allocated(Jr_xU)) allocate(Jr_xU(n))
-     if (.not. allocated(Js_xU)) allocate(Js_xU(n))
 
 !=================================================================================================
 Jq_xU = 0.0_wp*Jq_xU
@@ -13627,7 +13580,7 @@ Ju_x(1:n) = (1.0_wp/hx)*Jq_xU(1:n) + (1.0_wp/hy)*Jr_xU(1:n) + (1.0_wp/hz)*Js_xU(
      real(kind = wp), dimension(:), intent(out) :: Ju_x            ! metric coefficients
  
      real(kind = wp), dimension(:,:,:,:), allocatable, intent(in) :: X_x   ! the grid
-     real(kind = wp), dimension(:), allocatable, save :: Jq_xU, Jr_xU, Js_xU            ! work array
+     real(kind = wp), dimension(9) :: Jq_xU, Jr_xU, Js_xU! work array
      real(kind = wp) :: hx, hy, hz                      ! spatial steps discertizing the unit cube
      integer :: n, nx, ny, nz
  
@@ -13642,9 +13595,6 @@ Ju_x(1:n) = (1.0_wp/hx)*Jq_xU(1:n) + (1.0_wp/hy)*Jr_xU(1:n) + (1.0_wp/hz)*Js_xU(
      hz = G%hs
  
      ! work arrays:
-     if (.not. allocated(Jq_xU)) allocate(Jq_xU(n))
-     if (.not. allocated(Jr_xU)) allocate(Jr_xU(n))
-     if (.not. allocated(Js_xU)) allocate(Js_xU(n))
  
      !=================================================================================================
  
@@ -14632,7 +14582,7 @@ Ju_x(1:n) = (1.0_wp/hx)*Jq_xU(1:n) + (1.0_wp/hy)*Jr_xU(1:n) + (1.0_wp/hz)*Js_xU(
      real(kind = wp), dimension(:), intent(out) :: Ju_x            ! metric coefficients
  
      real(kind = wp), dimension(:,:,:,:), allocatable, intent(in) :: X_x   ! the grid
-     real(kind = wp), dimension(:), allocatable, save :: Jq_xU, Jr_xU, Js_xU            ! work array
+     real(kind = wp), dimension(9) :: Jq_xU, Jr_xU, Js_xU! work array
      real(kind = wp) :: hx, hy, hz                      ! spatial steps discertizing the unit cube
      integer :: n, nx, ny, nz
  
@@ -14647,9 +14597,6 @@ Ju_x(1:n) = (1.0_wp/hx)*Jq_xU(1:n) + (1.0_wp/hy)*Jr_xU(1:n) + (1.0_wp/hz)*Js_xU(
      hz = G%hs
  
      ! work arrays:
-     if (.not. allocated(Jq_xU)) allocate(Jq_xU(n))
-     if (.not. allocated(Jr_xU)) allocate(Jr_xU(n))
-     if (.not. allocated(Js_xU)) allocate(Js_xU(n))
  
      !=================================================================================================
      Jq_xU = 0.0_wp*Jq_xU

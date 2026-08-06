@@ -1,6 +1,6 @@
 # Accelerator runtime and MPI rank-to-GPU binding
 
-Status: implemented; H100 qualification pending  
+Status: implemented; H100 qualification passed  
 Date: 2026-08-06
 
 ## Purpose
@@ -124,3 +124,50 @@ unset WQL3D_TEST_MPI_OVERSUBSCRIBE
 Production multi-GPU qualification must instead request one scheduler task and
 one GPU for every local MPI rank.
 
+## Punakha H100 results
+
+Verified on 2026-08-06 with NVHPC 26.5 and one H100:
+
+```text
+backend: openacc
+OpenACC enabled: T
+CUDA-aware MPI intent: F
+working precision bits: 64
+global MPI ranks: 1
+rank 0: local_rank=0, visible_gpus=1, selected_gpu=0
+```
+
+The one-rank Q8 simulation completed normally:
+
+```text
+steps: 5
+max|field|:  1.8221E+02
+max|memory|: 1.4544E+01
+total MPI time: 2.034971116 s
+reported simulation elapsed time: 1.816 s
+```
+
+With both test-only oversubscription variables enabled, decomposition
+regressions passed while two ranks shared the single H100:
+
+```text
+q8_dynamic_decomposition  passed, 7.82 s
+q4_dynamic_decomposition  passed, 6.79 s
+total                      14.61 s
+```
+
+This confirms runtime initialization, binding, cleanup, and unchanged
+pre-offload numerical behavior. It is not a multi-GPU performance result.
+
+The default oversubscription guard was also verified with two MPI ranks and one
+visible H100 while MPI slot oversubscription was enabled. With
+`WQL3D_ALLOW_GPU_OVERSUBSCRIPTION` unset, startup reported:
+
+```text
+ERROR accelerator runtime: local MPI ranks=2 exceed visible GPUs=1
+  Request one GPU per local rank or explicitly set
+  WQL3D_ALLOW_GPU_OVERSUBSCRIPTION=1 for tests only.
+```
+
+The runtime called `MPI_Abort` with error code 92 before input parsing or domain
+allocation. This is the expected negative-test result.

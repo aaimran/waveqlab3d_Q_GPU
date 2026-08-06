@@ -58,3 +58,7 @@ its standards-compliant optional-argument fix are documented in
 Node-local MPI rank discovery, deterministic GPU ownership, reporting, and
 oversubscription policy are documented in
 [ACCELERATOR_RUNTIME.md](ACCELERATOR_RUNTIME.md).
+
+The Phase 2 allocation audit, private point-stencil scratch conversion, and
+remaining face-workspace work are documented in
+[PHASE2_SCRATCH_MEMORY_AUDIT.md](PHASE2_SCRATCH_MEMORY_AUDIT.md).

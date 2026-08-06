@@ -4,9 +4,8 @@ Last updated: 2026-08-06
 
 ## Current phase
 
-Phase 1 compiler and MPI baseline: complete. Accelerator runtime and
-deterministic rank-to-GPU binding are implemented; H100 qualification is
-pending.
+Phase 1 compiler/MPI baseline and H100 accelerator-runtime qualification are
+complete. Phase 2 scratch-safety work is active.
 
 ## Implemented
 
@@ -26,6 +25,9 @@ pending.
   GPU oversubscription by default.
 - Ordered startup reporting records backend, precision, CUDA-aware MPI intent,
   visible devices, and per-rank GPU selection.
+- Seventeen point-stencil routines now use private fixed nine-component work
+  arrays; 53 hot-path first-call allocations and their shared `save` state were
+  removed reproducibly.
 
 ## Not implemented yet
 
@@ -96,8 +98,25 @@ Accelerator-runtime CPU verification completed locally on 2026-08-06:
 - preflight reported CPU backend, 64-bit working precision, one node-local
   rank, OpenACC disabled, and CUDA-aware MPI intent disabled.
 
-OpenACC runtime compilation, H100 binding, and oversubscription rejection are
-pending Punakha verification.
+OpenACC accelerator-runtime verification passed on Punakha on 2026-08-06:
+
+- one global/local rank detected one visible H100 and selected GPU 0;
+- backend, 64-bit precision, and CUDA-aware MPI-disabled intent were correct;
+- Q8 completed five steps and reproduced `max|field|=1.8221E+02` and
+  `max|memory|=1.4544E+01`;
+- runtime cleanup and MPI finalization completed normally;
+- test-only two-rank/one-H100 Q8 and Q4 decomposition checks passed in 7.82 s
+  and 6.79 s respectively.
+
+Default GPU oversubscription rejection passed on Punakha: two local MPI ranks
+with one visible H100 were rejected before input/domain initialization with
+dedicated error code 92.
+
+Phase 2 point-scratch verification passed locally: the GNU debug build and the
+selected fQ8/Q8/Q4 regression suite completed with no failures after all point
+operator families were normalized. NVHPC and FD-family qualification remain
+pending, and face-sized SAT/interface workspaces still require persistent
+block/interface ownership.
 
 The IEEE signaling warnings printed after preflight occur during the
 intentional Fortran `STOP` after `MPI_Finalize`; no timestep was executed.
