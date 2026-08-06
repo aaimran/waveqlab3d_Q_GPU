@@ -178,6 +178,15 @@ endif()
 get_filename_component(MPIEXEC_DIRECTORY ${MPIEXEC_EXECUTABLE} DIRECTORY)
 set(WQL3D_MPI_RUNNER ${MPIEXEC_DIRECTORY}/mpirun)
 
+if(WQL3D_ENABLE_OPENACC)
+  add_test(NAME phase3_device_data_smoke
+    COMMAND ${CMAKE_COMMAND}
+      -D MPIEXEC=${WQL3D_MPI_RUNNER}
+      -D EXE=$<TARGET_FILE:waveqlab3d>
+      -D INPUT=${CMAKE_CURRENT_SOURCE_DIR}/../inputfile/test_elastic_traditional_o6.in
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/run_device_data_smoke.cmake)
+endif()
+
 if(WQL3D_ENABLE_OPENMP)
   add_test(NAME openmp_elastic_determinism
     COMMAND ${CMAKE_COMMAND}
