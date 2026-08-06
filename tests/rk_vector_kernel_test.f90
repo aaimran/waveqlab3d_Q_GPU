@@ -29,6 +29,8 @@ program rk_vector_kernel_test
   state_error = maxval(abs(state-expected_state))
   scale = max(1.0_wp, maxval(abs(expected_rate)), maxval(abs(expected_state)))
   write(*,'(A,ES12.4,A,ES12.4)') 'RK vector errors: rate=',rate_error,', state=',state_error
+  write(*,'(A,4ES12.4)') 'RK rate ranges: actual min/max, expected min/max=', &
+       minval(rate), maxval(rate), minval(expected_rate), maxval(expected_rate)
   if (rate_error > 32.0_wp*epsilon(1.0_wp)*scale) error stop 'RK rate scaling mismatch'
   if (state_error > 32.0_wp*epsilon(1.0_wp)*scale) error stop 'RK state update mismatch'
   call exit_test_data(state,rate)
