@@ -28,6 +28,8 @@ program main
   use simulation_config, only : simulation_config_t
   use input_preflight, only : preflight_input, print_preflight_time_parameters
   use time_step, only : RK_type,init_RK,time_step_RK
+  use accelerator_runtime, only : initialize_accelerator_runtime, &
+                                  finalize_accelerator_runtime
   implicit none
 
   ! domain_type contains all properties of a domain, including fields
@@ -66,6 +68,7 @@ program main
   ! initialize
 
   call start_mpi ! Initialize MPI for parallel processing
+  call initialize_accelerator_runtime()
   !call start_hdf_output() ! Initialize the parallel I/O using HF5
 
   ! Read the command-line to get the input filename
@@ -80,6 +83,7 @@ program main
        any(trim(adjustl(preflight_env)) == [character(len=5) :: '1', 'true', 'TRUE', 'yes', 'YES'])
   if (preflight_only) then
      if (is_master()) call print_preflight_time_parameters(resolved_config)
+     call finalize_accelerator_runtime()
      call finish_mpi(.false.)
      stop
   end if
@@ -150,6 +154,7 @@ program main
   end do
 
   call close_domain(D)
+  call finalize_accelerator_runtime()
   !call finish_hdf_output()
 
   call finish_mpi

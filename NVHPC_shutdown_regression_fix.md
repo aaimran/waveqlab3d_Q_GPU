@@ -159,6 +159,18 @@ It adds HPC-X/Open MPI option `--map-by :OVERSUBSCRIBE`. Production simulations
 must not use this test override; request the required Slurm tasks and CPUs
 instead.
 
+### Punakha confirmation
+
+The corrected builds were rerun on Punakha on 2026-08-06:
+
+| Configuration | fQ8 unit | Q8 1/2-rank | Q4 1/2-rank | Total |
+|---|---:|---:|---:|---:|
+| `cpu-release` | pass | pass, 7.02 s | pass, 5.90 s | 12.93 s |
+| `gpu-h100` | pass | pass, 7.03 s | pass, 5.97 s | 13.01 s |
+
+This closes the NVHPC shutdown regression and the Phase 1 Q4/Q8 decomposition
+gate. No numerical GPU kernel was active in this baseline.
+
 ## General coding rule
 
 Optional Fortran arguments must not be referenced in compound Boolean

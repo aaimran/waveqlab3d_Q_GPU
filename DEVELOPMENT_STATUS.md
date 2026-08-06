@@ -4,7 +4,9 @@ Last updated: 2026-08-06
 
 ## Current phase
 
-Phase 1: dual-backend build foundation.
+Phase 1 compiler and MPI baseline: complete. Accelerator runtime and
+deterministic rank-to-GPU binding are implemented; H100 qualification is
+pending.
 
 ## Implemented
 
@@ -18,6 +20,12 @@ Phase 1: dual-backend build foundation.
 - GPU architecture and CPU-source location are configurable.
 - GNU builds accept the generated stencil module's lines beyond column 132;
   this is a compile-only portability setting and does not alter arithmetic.
+- CPU and OpenACC accelerator-runtime implementations share one API.
+- Startup derives node-local rank and size with `MPI_Comm_split_type`.
+- OpenACC assigns devices deterministically from node-local rank and rejects
+  GPU oversubscription by default.
+- Ordered startup reporting records backend, precision, CUDA-aware MPI intent,
+  visible devices, and per-rank GPU selection.
 
 ## Not implemented yet
 
@@ -28,14 +36,13 @@ Phase 1: dual-backend build foundation.
 
 ## Next gate
 
-1. Build the standalone `cpu-release` preset on Punakha.
-2. Run one identical, deterministic short simulation with `cpu-release` and
-   `gpu-h100` in separate output directories.
-3. Compare return codes, receiver files, final-state diagnostics, and timing
-   metadata; archive the results as the first Punakha oracle.
-4. Run the applicable one-rank/two-rank regression subset.
-5. Only after equivalence passes, add accelerator runtime reporting and
-   node-local MPI-rank/GPU binding.
+1. Add accelerator runtime reporting without moving numerical arrays.
+2. Derive node-local rank with `MPI_Comm_split_type(MPI_COMM_TYPE_SHARED)`.
+3. Bind one local MPI rank to one visible GPU and reject oversubscription by
+   default.
+4. Report backend, global/local rank, device count, selected GPU, precision,
+   MPI implementation, and CUDA-aware MPI intent.
+5. Repeat the CPU/OpenACC Q4/Q8 regressions and a short elastic run.
 
 ## Local verification
 
@@ -70,6 +77,27 @@ remaining two-rank test attempts were rejected before launch because the
 interactive allocation advertised one MPI slot. The regression harness now
 offers explicit test-only oversubscription through
 `WQL3D_TEST_MPI_OVERSUBSCRIBE=1`; production launch behavior is unchanged.
+
+Punakha post-fix qualification completed on 2026-08-06:
+
+```text
+cpu-release: fQ8 unit pass; Q8 pass (7.02 s); Q4 pass (5.90 s); total 12.93 s
+gpu-h100:    fQ8 unit pass; Q8 pass (7.03 s); Q4 pass (5.97 s); total 13.01 s
+```
+
+All six selected checks passed. Each Q4/Q8 decomposition test compares the
+formatted final field and memory diagnostics from one-rank and two-rank runs.
+No numerical GPU kernel was active during this compiler-baseline gate.
+
+Accelerator-runtime CPU verification completed locally on 2026-08-06:
+
+- standalone GNU debug build passed;
+- fQ8, Q8 decomposition, and Q4 decomposition tests all passed;
+- preflight reported CPU backend, 64-bit working precision, one node-local
+  rank, OpenACC disabled, and CUDA-aware MPI intent disabled.
+
+OpenACC runtime compilation, H100 binding, and oversubscription rejection are
+pending Punakha verification.
 
 The IEEE signaling warnings printed after preflight occur during the
 intentional Fortran `STOP` after `MPI_Finalize`; no timestep was executed.

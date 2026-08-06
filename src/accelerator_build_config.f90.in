@@ -1,0 +1,9 @@
+module accelerator_build_config
+  implicit none
+  private
+
+  character(len=*), parameter, public :: accelerator_backend = '@WQL3D_BACKEND_NAME@'
+  logical, parameter, public :: openacc_enabled = @WQL3D_OPENACC_LITERAL@
+  logical, parameter, public :: cuda_aware_mpi_enabled = @WQL3D_CUDA_AWARE_MPI_LITERAL@
+end module accelerator_build_config
+

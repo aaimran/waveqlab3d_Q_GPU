@@ -16,6 +16,21 @@ link_directories(${MPI_Fortran_LIBRARY_PATH})
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+set(WQL3D_OPENACC_LITERAL ".false.")
+set(WQL3D_CUDA_AWARE_MPI_LITERAL ".false.")
+set(WQL3D_BACKEND_NAME "cpu")
+set(WQL3D_ACCELERATOR_RUNTIME accelerator_runtime_cpu.f90)
+if(WQL3D_ENABLE_OPENACC)
+    set(WQL3D_OPENACC_LITERAL ".true.")
+    set(WQL3D_BACKEND_NAME "openacc")
+    set(WQL3D_ACCELERATOR_RUNTIME accelerator_runtime_openacc.f90)
+endif()
+if(WQL3D_ENABLE_CUDA_AWARE_MPI)
+    set(WQL3D_CUDA_AWARE_MPI_LITERAL ".true.")
+endif()
+configure_file(accelerator_build_config.f90.in
+    ${CMAKE_CURRENT_BINARY_DIR}/accelerator_build_config.f90 @ONLY)
+
 # The fortran compiler flags depends on the compiler being used
 get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
 
@@ -49,6 +64,8 @@ endif(APPLE)
 
 # Setup the source files and the executable name for the project.
 set(WQL3D_SRC
+  ${CMAKE_CURRENT_BINARY_DIR}/accelerator_build_config.f90
+  ${WQL3D_ACCELERATOR_RUNTIME}
   fault_output.f90
   iface.f90
   block.f90

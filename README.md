@@ -54,3 +54,7 @@ workaround and H100 OpenACC device test, is recorded in
 The NVHPC shutdown segmentation fault found during Q4/Q8 qualification and
 its standards-compliant optional-argument fix are documented in
 [NVHPC_shutdown_regression_fix.md](NVHPC_shutdown_regression_fix.md).
+
+Node-local MPI rank discovery, deterministic GPU ownership, reporting, and
+oversubscription policy are documented in
+[ACCELERATOR_RUNTIME.md](ACCELERATOR_RUNTIME.md).
