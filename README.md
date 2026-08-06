@@ -5,6 +5,11 @@ MPI/CPU Fortran solver to NVIDIA GPUs. See the complete design in
 [MPI_CPU_to_GPU_Migration_Plan.md](MPI_CPU_to_GPU_Migration_Plan.md) and active
 progress in [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md).
 
+When moving development to the Punakha Remote SSH workspace, start with
+[CODEX_PUNAKHA_HANDOFF.md](CODEX_PUNAKHA_HANDOFF.md). It provides the complete
+context, verified environment, required reading order, regression commands,
+and exact next migration gate for a new Codex session.
+
 The repository is standalone. It contains its own solver sources, tests,
 inputs, CMake helpers, preprocessing tools, and simulation cases. The CPU and
 GPU configurations build from the same locally versioned numerical source;
