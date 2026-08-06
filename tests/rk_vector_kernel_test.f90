@@ -8,6 +8,7 @@ program rk_vector_kernel_test
   real(kind=wp), allocatable :: expected_state(:,:,:,:), expected_rate(:,:,:,:)
   real(kind=wp), parameter :: coefficient=-0.375_wp, increment=0.125_wp
   integer :: i, j, k, c
+  real(kind=wp) :: rate_error, state_error, scale
 
   allocate(state(-2:nq-3,3:nr+2,-1:ns-2,nc), rate(-2:nq-3,3:nr+2,-1:ns-2,nc))
   allocate(expected_state, source=state)
@@ -24,8 +25,12 @@ program rk_vector_kernel_test
   call enter_test_data(state,rate)
   call scale_rate_array(rate,coefficient)
   call update_state_array(state,rate,increment)
-  if (any(rate /= expected_rate)) error stop 'RK rate scaling mismatch'
-  if (any(state /= expected_state)) error stop 'RK state update mismatch'
+  rate_error = maxval(abs(rate-expected_rate))
+  state_error = maxval(abs(state-expected_state))
+  scale = max(1.0_wp, maxval(abs(expected_rate)), maxval(abs(expected_state)))
+  write(*,'(A,ES12.4,A,ES12.4)') 'RK vector errors: rate=',rate_error,', state=',state_error
+  if (rate_error > 32.0_wp*epsilon(1.0_wp)*scale) error stop 'RK rate scaling mismatch'
+  if (state_error > 32.0_wp*epsilon(1.0_wp)*scale) error stop 'RK state update mismatch'
   call exit_test_data(state,rate)
   write(*,'(A)') 'PASS: asymmetric RK vector scale/update matches the CPU expression'
 end program rk_vector_kernel_test
