@@ -14,7 +14,8 @@ module accelerator_runtime
   integer, save :: selected_device = -1
   logical, save :: initialized = .false.
 
-  public :: initialize_accelerator_runtime, finalize_accelerator_runtime
+  public :: initialize_accelerator_runtime, finalize_accelerator_runtime, &
+       enforce_device_memory_capacity
 
 contains
 
@@ -99,6 +100,142 @@ contains
   end subroutine finalize_accelerator_runtime
 
 
+  subroutine enforce_device_memory_capacity(predicted_bytes)
+    use, intrinsic :: iso_fortran_env, only : int64, error_unit
+    use, intrinsic :: ieee_arithmetic, only : ieee_is_finite
+    integer(int64), intent(in) :: predicted_bytes
+    integer(int64), parameter :: default_fixed_reserve = 1073741824_int64
+    real(kind=wp), parameter :: default_fractional_reserve = 0.10_wp
+    integer(int64) :: capacity_bytes, fixed_reserve, fractional_bytes
+    integer(int64) :: usable_bytes, remaining_bytes
+    integer(int64) :: maximum_predicted
+    real(kind=wp) :: fractional_reserve
+    integer :: ierr, world_rank, parse_status, local_failure, any_failure
+
+    call MPI_Comm_rank(MPI_COMM_WORLD, world_rank, ierr)
+    call check_mpi(ierr, 'MPI_Comm_rank(memory capacity)')
+    call MPI_Allreduce(predicted_bytes, maximum_predicted, 1, MPI_INTEGER8, &
+         MPI_MAX, MPI_COMM_WORLD, ierr)
+    call check_mpi(ierr, 'MPI_Allreduce(memory payload)')
+
+    call read_environment_int64('WQL3D_GPU_MEMORY_BYTES', capacity_bytes, &
+         parse_status, required=.true.)
+    if (parse_status /= 0) then
+      if (world_rank == 0) then
+        write(error_unit,'(/,A)') 'FATAL  RUN-GPU-MEM-001'
+        write(error_unit,'(A)') '  WQL3D_GPU_MEMORY_BYTES must be set to a positive integer byte count.'
+        write(error_unit,'(A)') '  Capacity enforcement requires an explicit, deterministic device capacity.'
+        flush(error_unit)
+      end if
+      call MPI_Abort(MPI_COMM_WORLD, 93, ierr)
+    end if
+
+    fixed_reserve = default_fixed_reserve
+    call read_environment_int64('WQL3D_GPU_MEMORY_FIXED_RESERVE_BYTES', &
+         fixed_reserve, parse_status, required=.false.)
+    if (parse_status /= 0) call memory_configuration_error( &
+         'WQL3D_GPU_MEMORY_FIXED_RESERVE_BYTES must be a nonnegative integer.', world_rank)
+
+    fractional_reserve = default_fractional_reserve
+    call read_environment_real('WQL3D_GPU_MEMORY_RESERVE_FRACTION', &
+         fractional_reserve, parse_status)
+    if (parse_status /= 0 .or. .not.ieee_is_finite(fractional_reserve) .or. &
+         fractional_reserve < 0.0_wp .or. &
+         fractional_reserve >= 1.0_wp) call memory_configuration_error( &
+         'WQL3D_GPU_MEMORY_RESERVE_FRACTION must be in [0,1).', world_rank)
+
+    fractional_bytes = int(real(capacity_bytes, wp) * fractional_reserve, int64)
+    usable_bytes = max(0_int64, capacity_bytes - fixed_reserve - fractional_bytes)
+    remaining_bytes = usable_bytes - maximum_predicted
+    local_failure = merge(1, 0, predicted_bytes > usable_bytes)
+    call MPI_Allreduce(local_failure, any_failure, 1, MPI_INTEGER, MPI_MAX, &
+         MPI_COMM_WORLD, ierr)
+    call check_mpi(ierr, 'MPI_Allreduce(memory decision)')
+
+    if (world_rank == 0) then
+      write(*,'(A)') 'GPU memory capacity preflight:'
+      write(*,'(A,F12.3,A)') '  predicted persistent payload: ', &
+           real(maximum_predicted,wp)/1048576.0_wp, ' MiB'
+      write(*,'(A,F12.3,A)') '  configured device capacity:  ', &
+           real(capacity_bytes,wp)/1048576.0_wp, ' MiB'
+      write(*,'(A,F12.3,A)') '  fixed reserve:               ', &
+           real(fixed_reserve,wp)/1048576.0_wp, ' MiB'
+      write(*,'(A,F12.3,A,F6.2,A)') '  fractional reserve:          ', &
+           real(fractional_bytes,wp)/1048576.0_wp, ' MiB (', &
+           100.0_wp*fractional_reserve, '%)'
+      write(*,'(A,F12.3,A)') '  usable capacity:             ', &
+           real(usable_bytes,wp)/1048576.0_wp, ' MiB'
+      write(*,'(A,F12.3,A)') '  remaining headroom:          ', &
+           real(remaining_bytes,wp)/1048576.0_wp, ' MiB'
+      write(*,'(A,A)') '  decision:                    ', &
+           merge('FAIL', 'PASS', any_failure /= 0)
+      flush(6)
+    end if
+
+    if (any_failure /= 0) then
+      if (world_rank == 0) then
+        write(error_unit,'(/,A)') 'FATAL  RUN-GPU-MEM-002'
+        write(error_unit,'(A)') '  Predicted persistent device payload exceeds usable GPU capacity.'
+        flush(error_unit)
+      end if
+      call MPI_Abort(MPI_COMM_WORLD, 94, ierr)
+    end if
+  end subroutine enforce_device_memory_capacity
+
+
+  subroutine read_environment_int64(name, value, parse_status, required)
+    use, intrinsic :: iso_fortran_env, only : int64
+    character(*), intent(in) :: name
+    integer(int64), intent(inout) :: value
+    integer, intent(out) :: parse_status
+    logical, intent(in) :: required
+    character(len=128) :: text
+    integer :: env_status
+
+    text = ''
+    call get_environment_variable(name, text, status=env_status)
+    if (env_status /= 0 .or. len_trim(text) == 0) then
+      parse_status = merge(1, 0, required)
+      return
+    end if
+    read(text, *, iostat=parse_status) value
+    if (parse_status == 0 .and. value < 0_int64) parse_status = 1
+    if (required .and. value == 0_int64) parse_status = 1
+  end subroutine read_environment_int64
+
+
+  subroutine read_environment_real(name, value, parse_status)
+    character(*), intent(in) :: name
+    real(kind=wp), intent(inout) :: value
+    integer, intent(out) :: parse_status
+    character(len=128) :: text
+    integer :: env_status
+
+    text = ''
+    call get_environment_variable(name, text, status=env_status)
+    if (env_status /= 0 .or. len_trim(text) == 0) then
+      parse_status = 0
+      return
+    end if
+    read(text, *, iostat=parse_status) value
+  end subroutine read_environment_real
+
+
+  subroutine memory_configuration_error(message, world_rank)
+    use, intrinsic :: iso_fortran_env, only : error_unit
+    character(*), intent(in) :: message
+    integer, intent(in) :: world_rank
+    integer :: ierr
+
+    if (world_rank == 0) then
+      write(error_unit,'(/,A)') 'FATAL  RUN-GPU-MEM-001'
+      write(error_unit,'(A,A)') '  ', trim(message)
+      flush(error_unit)
+    end if
+    call MPI_Abort(MPI_COMM_WORLD, 93, ierr)
+  end subroutine memory_configuration_error
+
+
   logical function environment_true(name)
     character(*), intent(in) :: name
     character(16) :: value
@@ -124,4 +261,3 @@ contains
   end subroutine check_mpi
 
 end module accelerator_runtime
-

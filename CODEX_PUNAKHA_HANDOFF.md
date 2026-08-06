@@ -280,6 +280,13 @@ H100:
 export WQL3D_ALLOW_GPU_OVERSUBSCRIPTION=1
 ```
 
+All OpenACC simulations also require an explicit per-device capacity. The
+verified H100 reports 81559 MiB:
+
+```bash
+export WQL3D_GPU_MEMORY_BYTES=85520809984
+```
+
 Run the core suite:
 
 ```bash
@@ -310,6 +317,7 @@ Clean the test-only overrides afterward:
 ```bash
 unset WQL3D_ALLOW_GPU_OVERSUBSCRIPTION
 unset WQL3D_TEST_MPI_OVERSUBSCRIBE
+unset WQL3D_GPU_MEMORY_BYTES
 ```
 
 ## Inventory checks
@@ -411,4 +419,3 @@ The new session understands that:
 - no numerical GPU kernel is currently offloaded;
 - the CPU oracle and single-source CPU/GPU codebase must remain intact;
 - every change requires CPU plus NVHPC/H100 regression evidence.
-

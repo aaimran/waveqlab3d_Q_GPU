@@ -24,6 +24,38 @@ MPI_Init
 
 Preflight-only execution also initializes and finalizes the runtime cleanly.
 
+## GPU memory capacity preflight
+
+OpenACC simulations require an explicit device-capacity value before the first
+RK step:
+
+```bash
+export WQL3D_GPU_MEMORY_BYTES=85520809984
+```
+
+Use the scheduler-visible device's byte capacity; do not use aggregate memory
+across GPUs. The capacity policy reserves 1 GiB for the OpenACC, CUDA, and MPI
+runtimes, then reserves another 10% of total capacity for kernel temporaries,
+allocator fragmentation, and operational headroom. The predicted persistent
+payload must fit in the remainder on every rank.
+
+Controlled experiments may override the reserves:
+
+```bash
+export WQL3D_GPU_MEMORY_FIXED_RESERVE_BYTES=1073741824
+export WQL3D_GPU_MEMORY_RESERVE_FRACTION=0.10
+```
+
+The fixed reserve must be a nonnegative integer byte count and the fraction
+must be in `[0,1)`. Missing or malformed capacity configuration emits
+`RUN-GPU-MEM-001` and aborts with code 93. Insufficient usable capacity emits
+`RUN-GPU-MEM-002` and aborts with code 94. CPU builds continue to report the
+predicted payload but skip accelerator-capacity enforcement.
+
+The OpenACC CTest configuration includes deterministic sufficient-capacity and
+insufficient-capacity cases. They inject synthetic capacity values and do not
+depend on the installed GPU's physical memory size.
+
 ## Node-local rank discovery
 
 Each process calls:

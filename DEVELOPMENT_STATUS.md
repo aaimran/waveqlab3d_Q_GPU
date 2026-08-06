@@ -205,3 +205,13 @@ Standalone-tree verification on 2026-08-06:
 - passed one-rank preflight using the local `inputfile/test_moment_tensor.in`;
 - confirmed the original `waveqlab3d_Q/src/CMakeLists.txt` has no migration
   diff.
+
+GPU capacity/headroom enforcement is now implemented pending H100
+qualification. OpenACC runs require an explicit `WQL3D_GPU_MEMORY_BYTES`
+capacity, reserve 1 GiB plus 10% by default, and reject missing, malformed, or
+insufficient capacity before the first RK step with dedicated diagnostics.
+CPU runs retain payload reporting but skip enforcement. Deterministic OpenACC
+CTest fixtures inject sufficient and insufficient capacities. The login-node
+GNU debug build and selected fQ8/Q8/Q4/traditional/upwind/upwind-DRP suite
+passed 6/6 while `WQL3D_GPU_MEMORY_BYTES=1` confirmed that CPU execution is not
+rejected. NVHPC compilation and H100 pass/fail qualification are next.

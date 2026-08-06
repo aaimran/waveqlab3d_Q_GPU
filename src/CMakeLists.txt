@@ -156,6 +156,26 @@ add_test(NAME fq8_effective_response_unit
 get_filename_component(MPIEXEC_DIRECTORY ${MPIEXEC_EXECUTABLE} DIRECTORY)
 set(WQL3D_MPI_RUNNER ${MPIEXEC_DIRECTORY}/mpirun)
 
+if(WQL3D_ENABLE_OPENACC)
+  add_test(NAME gpu_memory_capacity_sufficient
+    COMMAND ${WQL3D_MPI_RUNNER} ${MPIEXEC_NUMPROC_FLAG} 1
+      $<TARGET_FILE:waveqlab3d>
+      ${CMAKE_CURRENT_SOURCE_DIR}/../inputfile/test_elastic_traditional_o6.in)
+  set_tests_properties(gpu_memory_capacity_sufficient PROPERTIES
+    ENVIRONMENT "WQL3D_GPU_MEMORY_BYTES=8589934592")
+
+  add_test(NAME gpu_memory_capacity_rejects_insufficient
+    COMMAND ${CMAKE_COMMAND}
+      -D MPIEXEC=${WQL3D_MPI_RUNNER}
+      -D NPROCS=1
+      -D EXE=$<TARGET_FILE:waveqlab3d>
+      -D INPUT=${CMAKE_CURRENT_SOURCE_DIR}/../inputfile/test_elastic_traditional_o6.in
+      -D EXPECTED_CODE=RUN-GPU-MEM-002
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/run_expected_preflight_failure.cmake)
+  set_tests_properties(gpu_memory_capacity_rejects_insufficient PROPERTIES
+    ENVIRONMENT "WQL3D_GPU_MEMORY_BYTES=1048576")
+endif()
+
 
 set (no_mpi_proc 4)
 

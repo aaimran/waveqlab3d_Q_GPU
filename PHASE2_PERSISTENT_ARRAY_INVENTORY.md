@@ -1,7 +1,7 @@
 # Phase 2 persistent-array inventory
 
 Date: 2026-08-06  
-Status: structural inventory and runtime payload accounting implemented; capacity enforcement pending
+Status: structural inventory, runtime payload accounting, and capacity enforcement implemented
 
 ## Purpose
 
@@ -93,6 +93,13 @@ Local GNU debug measurements for one 41-cubed block were:
 | predicted device payload/rank | 32.334 MiB | 109.961 MiB |
 
 Both the Q8 and elastic one-rank/two-rank regressions passed after accounting
-was enabled. The remaining memory subgate is capacity enforcement with a
-documented reserve for OpenACC runtime, MPI, temporary kernels, and allocator
-fragmentation.
+was enabled.
+
+OpenACC runs now require `WQL3D_GPU_MEMORY_BYTES`. Before the first timestep,
+the solver subtracts a default 1 GiB fixed runtime/MPI reserve and 10% of total
+capacity for kernel temporaries, allocator fragmentation, and headroom. It
+then compares the usable remainder with the maximum predicted persistent
+payload across ranks. The fixed and fractional reserves have validated
+environment overrides for controlled experiments. Deterministic CTests inject
+both sufficient and insufficient synthetic capacities; CPU runs skip the
+accelerator-capacity decision.

@@ -11,7 +11,8 @@ module accelerator_runtime
   integer, save :: local_size = 0
   logical, save :: initialized = .false.
 
-  public :: initialize_accelerator_runtime, finalize_accelerator_runtime
+  public :: initialize_accelerator_runtime, finalize_accelerator_runtime, &
+       enforce_device_memory_capacity
 
 contains
 
@@ -53,6 +54,15 @@ contains
   end subroutine finalize_accelerator_runtime
 
 
+  subroutine enforce_device_memory_capacity(predicted_bytes)
+    integer(kind=8), intent(in) :: predicted_bytes
+
+    ! CPU runs retain the payload report but never reject a simulation based
+    ! on accelerator capacity.
+    if (predicted_bytes < 0_8) error stop 'negative predicted device payload'
+  end subroutine enforce_device_memory_capacity
+
+
   subroutine check_mpi(ierr, operation)
     integer, intent(in) :: ierr
     character(*), intent(in) :: operation
@@ -65,4 +75,3 @@ contains
   end subroutine check_mpi
 
 end module accelerator_runtime
-

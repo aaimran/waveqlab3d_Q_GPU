@@ -370,6 +370,7 @@ contains
   subroutine report_persistent_memory(D)
     use persistent_memory, only : persistent_memory_bytes
     use mpi3dbasic, only : rank
+    use accelerator_runtime, only : enforce_device_memory_capacity
     implicit none
 
     type(domain_type), intent(in) :: D
@@ -401,6 +402,7 @@ contains
        write(*,'(A,F12.3,A)') '  predicted device per rank:  ', &
             real(maximum_device,wp)/1048576.0_wp, ' MiB'
     end if
+    call enforce_device_memory_capacity(local_device)
   end subroutine report_persistent_memory
 
 
