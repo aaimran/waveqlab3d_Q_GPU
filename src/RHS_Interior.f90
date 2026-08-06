@@ -1593,7 +1593,6 @@ if (F%order .eq. 7) then
     type(boundary_type) :: boundary_vars
     real(kind = wp) :: rho, mu, lam, tau0, hx, hy, hz                          ! penalty the in x-direction, y-direction, z-direction
 
-    real(kind = wp), dimension(:,:,:), allocatable, save :: U_q, U_r, U_s     ! to hold boundary forcing
     real(kind = wp) :: U_x(9), U_y(9), U_z(9)     ! to hold boundary forcing
     
     integer :: x, y, z
@@ -1614,11 +1613,8 @@ if (F%order .eq. 7) then
 
     n = size(B%F%DF,4)
 
-    ! initialize work array
-
-    if (.not.allocated(U_q)) allocate(U_q(my:py,mz:pz,n))
-    if (.not.allocated(U_r)) allocate(U_r(mx:px,mz:pz,n))
-    if (.not.allocated(U_s)) allocate(U_s(mx:px,my:py,n))
+    associate(U_q => B%work_boundary_q, U_r => B%work_boundary_r, &
+              U_s => B%work_boundary_s)
 
     ! construct boundary forcing
     if (boundary_vars%Lx > 0) then
@@ -1765,6 +1761,7 @@ if (F%order .eq. 7) then
        end do
     end if
 
+    end associate
   end subroutine Impose_Boundary_Condition
 
 
@@ -1791,7 +1788,6 @@ if (F%order .eq. 7) then
     integer :: mx, my, mz, px, py, pz, n             ! number of grid points and field variables
 
     real(kind = wp) :: tau0, hx
-    real(kind = wp), dimension(:,:,:), allocatable, save :: F_x, G_x  ! to hold boundary forcing in the negative directions
     integer :: y, z
 
     mx = B%G%C%mq
@@ -1806,8 +1802,7 @@ if (F%order .eq. 7) then
     tau0 = B%tau0
 
     n = size(B%F%DF, 4)
-    if (.not.allocated(F_x)) allocate(F_x(my:py, mz:pz, n))
-    if (.not.allocated(G_x)) allocate(G_x(my:py, mz:pz, n))
+    associate(F_x => I%work_F, G_x => I%work_G)
 
     ! Couple_Interface_x computes hat variables (by solving friction law or interface conditions)
     ! and also computes SAT forcing terms, but it does not add SAT forcing to rates
@@ -1841,6 +1836,7 @@ if (F%order .eq. 7) then
 !      print *, ib, G_x(11,11,:)
      
 
+    end associate
    end subroutine Impose_Interface_Condition
 
 

@@ -213,6 +213,10 @@ module datatypes
       type(block_boundary) :: B(6) !< six sides on a block in 3D, with various arrays defined on them
       type(boundary_type) :: boundary_vars
       type(block_pml) :: PMLB(6) !< six sides on a block in 3D, with various PML auxiliary arrays defined on them
+      ! Persistent SAT workspaces, allocated once from local face geometry.
+      real(kind = wp),dimension(:,:,:),allocatable :: work_boundary_q
+      real(kind = wp),dimension(:,:,:),allocatable :: work_boundary_r
+      real(kind = wp),dimension(:,:,:),allocatable :: work_boundary_s
       real(kind = wp) :: tau0
       real(kind = wp) :: rho_s_p(3)
       real(kind = wp) :: sum
@@ -235,6 +239,10 @@ module datatypes
                                        DW !< state variable and its rate
       real(kind = wp),dimension(:,:,:), allocatable :: Svel !< slip velocity across the interface
       real(kind = wp),dimension(:,:,:), allocatable :: trup !< slip velocity across the interface
+      ! Persistent interface/SAT workspaces.
+      real(kind = wp),dimension(:,:,:),allocatable :: work_F, work_G
+      real(kind = wp),dimension(:,:,:),allocatable :: work_u_rotated, work_v_rotated
+      real(kind = wp),dimension(:,:,:),allocatable :: work_u_hat, work_v_hat
       type(interface3d) :: II !< Interface communicator
    end type iface_type
  

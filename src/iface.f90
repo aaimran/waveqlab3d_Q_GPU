@@ -41,6 +41,13 @@ contains
     call allocate_array_boundary(I%trup ,Bm%G%C,1, I%direction, ghost_nodes=.true., Fval = 1.0e9_wp)
     call allocate_array_boundary(I%Svel ,Bm%G%C,3, I%direction, ghost_nodes=.true., Fval = 0.0_wp)
 
+    allocate(I%work_F(Bm%G%C%mr:Bm%G%C%pr, Bm%G%C%ms:Bm%G%C%ps, 9))
+    allocate(I%work_G(Bm%G%C%mr:Bm%G%C%pr, Bm%G%C%ms:Bm%G%C%ps, 9))
+    allocate(I%work_u_rotated(Bm%G%C%mr:Bm%G%C%pr, Bm%G%C%ms:Bm%G%C%ps, 6))
+    allocate(I%work_v_rotated(Bm%G%C%mr:Bm%G%C%pr, Bm%G%C%ms:Bm%G%C%ps, 6))
+    allocate(I%work_u_hat(Bm%G%C%mr:Bm%G%C%pr, Bm%G%C%ms:Bm%G%C%ps, 6))
+    allocate(I%work_v_hat(Bm%G%C%mr:Bm%G%C%pr, Bm%G%C%ms:Bm%G%C%ps, 6))
+
     !> Set the interface ID
 !     I%id = Bm%id + Bp%id
     I%II = II
@@ -76,5 +83,17 @@ contains
     I%W = I%W + dt*I%DW
 
   end subroutine update_fields_iface
+
+
+  subroutine destroy_iface_workspaces(I)
+    type(iface_type), intent(inout) :: I
+
+    if (allocated(I%work_F)) deallocate(I%work_F)
+    if (allocated(I%work_G)) deallocate(I%work_G)
+    if (allocated(I%work_u_rotated)) deallocate(I%work_u_rotated)
+    if (allocated(I%work_v_rotated)) deallocate(I%work_v_rotated)
+    if (allocated(I%work_u_hat)) deallocate(I%work_u_hat)
+    if (allocated(I%work_v_hat)) deallocate(I%work_v_hat)
+  end subroutine destroy_iface_workspaces
 
 end module iface

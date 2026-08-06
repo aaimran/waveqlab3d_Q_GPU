@@ -107,3 +107,41 @@ Before closing the scratch subphase:
 5. move active face workspaces into explicit block/interface ownership;
 6. add per-owner byte accounting after all persistent owners are explicit.
 
+## Punakha NVHPC confirmation
+
+The private point-stencil scratch conversion passed on Punakha on 2026-08-06:
+
+| Configuration | fQ8 unit | Q8 1/2-rank | Q4 1/2-rank | Total |
+|---|---:|---:|---:|---:|
+| `cpu-release` | pass | pass, 6.69 s | pass, 5.91 s | 12.61 s |
+| `gpu-h100` | pass | pass, 7.83 s | pass, 6.58 s | 14.42 s |
+
+Both builds passed all selected tests. This closes the point-stencil scratch
+subgate for the Q4/Q8 traditional cases. Short explicit upwind and upwind-DRP
+operator fixtures remain required before those FD families are qualified.
+
+## Persistent face-workspace ownership
+
+The active SAT and interface paths now use explicitly owned persistent
+workspaces instead of procedure-local `allocatable, save` arrays:
+
+- each block owns three physical-boundary workspaces;
+- each interface owns forcing, rotated-field, and hat-field workspaces;
+- allocation occurs during block/interface initialization;
+- cleanup occurs in `close_domain` through guarded deallocation;
+- non-owning routine dummies are assumed-shape rather than unnecessarily
+  requiring allocatable actual arguments.
+
+Local GNU debug verification on 2026-08-06 passed the fQ8 unit and Q8/Q4
+one-rank/two-rank decomposition suite. Both 46-step serial friction/interface
+smoke runs also completed normally, exercising Cartesian and curvilinear
+two-block interfaces and workspace cleanup.
+
+The legacy interface-test harness was repaired for the standalone tree: test
+data and checker paths are explicit, required output directories are created,
+and `read_binary.py` is Python 3 and standard-library only. Its archived truth
+comparison is not qualified locally: the truth corresponds to the historical
+four-rank layout, while current decomposition safety rejects splitting these
+21-point blocks across four ranks because it violates the 20-point local-grid
+minimum. Punakha NVHPC CPU/OpenACC builds and a suitably sized locked numerical
+interface fixture remain required before closing this subphase.

@@ -21,8 +21,8 @@ contains
     character(*),intent(in) :: coupling
     integer, intent(in) :: stage, ib
     type(fault_type), intent(inout) :: handles
-    real(kind = wp), dimension(:,:,:), allocatable, intent(in) :: u_in, v_in           !< grid variables
-    real(kind = wp), dimension(:,:,:), allocatable, intent(inout) :: u_out, v_out      !< hat variables
+    real(kind = wp), dimension(:,:,:), intent(in) :: u_in, v_in           !< grid variables
+    real(kind = wp), dimension(:,:,:), intent(inout) :: u_out, v_out      !< hat variables
     real(kind = wp), dimension(:,:,:), allocatable, intent(in) :: LambdaMu1, LambdaMu2           !< material properties
     real(kind = wp), dimension(:,:,:), allocatable, intent(in) :: n_l, n_m, n_n          !< normals
 
@@ -2885,5 +2885,4 @@ contains
   end subroutine Set_Theta
 
 end module Interface_Condition
-
 

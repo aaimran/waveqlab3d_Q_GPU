@@ -118,6 +118,20 @@ operator families were normalized. NVHPC and FD-family qualification remain
 pending, and face-sized SAT/interface workspaces still require persistent
 block/interface ownership.
 
+Punakha NVHPC point-scratch qualification passed on 2026-08-06:
+
+```text
+cpu-release: fQ8 pass; Q8 pass (6.69 s); Q4 pass (5.91 s); total 12.61 s
+gpu-h100:    fQ8 pass; Q8 pass (7.83 s); Q4 pass (6.58 s); total 14.42 s
+```
+
+Persistent ownership is now implemented for active block-boundary and
+interface face workspaces. The local GNU debug build, fQ8/Q8/Q4 suite, and
+46-step Cartesian and curvilinear serial interface smoke runs complete
+normally. Punakha NVHPC validation, a decomposition-compatible locked
+interface oracle, memory accounting, and explicit upwind/upwind-DRP fixtures
+remain open.
+
 The IEEE signaling warnings printed after preflight occur during the
 intentional Fortran `STOP` after `MPI_Finalize`; no timestep was executed.
 

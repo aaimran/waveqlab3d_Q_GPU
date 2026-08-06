@@ -410,6 +410,7 @@ contains
   subroutine close_domain(D)
 
     use fault_output, only: destroy_fault
+    use iface, only : destroy_iface_workspaces
     use material, only : destroy_anelastic_Q4_properties, destroy_anelastic_Q8_properties, &
          destroy_anelastic_Qf8_properties
     use diagnostics, only : fatal_local
@@ -489,6 +490,13 @@ contains
        if (D%B(i)%M%anelastic_Q) call destroy_anelastic_Q4_properties(D%B(i)%M)
        if (D%B(i)%M%anelastic_Q8) call destroy_anelastic_Q8_properties(D%B(i)%M)
        if (D%B(i)%M%anelastic_Qf8) call destroy_anelastic_Qf8_properties(D%B(i)%M)
+       if (allocated(D%B(i)%work_boundary_q)) deallocate(D%B(i)%work_boundary_q)
+       if (allocated(D%B(i)%work_boundary_r)) deallocate(D%B(i)%work_boundary_r)
+       if (allocated(D%B(i)%work_boundary_s)) deallocate(D%B(i)%work_boundary_s)
+    end do
+
+    do i = 1, D%nifaces
+       call destroy_iface_workspaces(D%I(i))
     end do
 
   end subroutine close_domain

@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+from array import array
+from pathlib import Path
 from sys import argv, exit
-import numpy as np
-import matplotlib.pyplot as plt
 
 
 dir1 = 'truth'
@@ -22,18 +22,18 @@ _files = [(4, prefix+'_interface.S'),
           (6, prefix+'_interface.Vhat')]
 
 for nfields, fname in _files:
-    fields = np.empty((2, ntime, nfields, ngrid, ngrid), dtype='float32')
+    filenames = [Path(path, dir1, fname), Path(path, dir2, fname)]
+    fields = []
+    expected_values = ntime * nfields * ngrid * ngrid
 
-    filenames = [path+'/'+dir1+'/'+fname, path+'/'+dir2+'/'+fname]
+    for name in filenames:
+        values = array('f')
+        with name.open('rb') as stream:
+            values.fromfile(stream, expected_values)
+        fields.append(values)
 
-    for n, name in enumerate(filenames):
-        f = open(name, 'rb')
-        temp_dat = np.fromfile(f, 'float32')
-        fields[n] = np.reshape(temp_dat, fields.shape[1:])
-
-    diff = fields - fields[0]
-    diffabs = np.sqrt(diff*diff)
-
-    if np.amax(diffabs) > 1.0e-3:
-      print fname, np.amax(diffabs)
-      exit(1)
+    max_difference = max(abs(actual - expected)
+                         for expected, actual in zip(fields[0], fields[1]))
+    if max_difference > 1.0e-3:
+        print(fname, max_difference)
+        exit(1)

@@ -20,7 +20,7 @@ contains
     ! compute hat variables and SAT forcing terms, but does not add SAT terms to rates
   
     implicit none
-    real(kind = wp),dimension(:,:,:), allocatable, intent(inout) :: u_bc, v_bc                           ! SAT-forcing
+    real(kind = wp),dimension(:,:,:), intent(inout) :: u_bc, v_bc                           ! SAT-forcing
     character(256), intent(in) :: problem
     character(*),intent(in) :: coupling
     integer, intent(in) :: stage, ib
@@ -40,8 +40,6 @@ contains
 
     integer :: mx1, my1, mz1, px1, py1, pz1
 
-    real(kind = wp), dimension(:, :, :), allocatable, save :: u_rotated, v_rotated   ! Local grid varibles in rotated cordinates
-    real(kind = wp), dimension(:, :, :), allocatable, save :: u_hat, v_hat           ! Local hat variables
 
     ! Local characteristics in local rotated grid variables
     real(kind = wp) :: p1_p, p2_p, p3_p
@@ -60,7 +58,7 @@ contains
 
     integer :: y, z, xend                                                    ! Local grid indices
 
-    real(kind = wp), dimension(:), allocatable, save :: fu(:), fv(:) ! exact MMS solutions
+    real(kind = wp), dimension(9) :: fu, fv ! exact MMS solutions
 
     real(kind = wp) :: norm1, norm2, dir
     real(kind = wp) :: q1_x, q1_y, q1_z, q2_x, q2_y, q2_z
@@ -89,11 +87,8 @@ contains
     mbz1 = G%C%mbs
     pbz1 = G%C%pbs
 
-    if (.not. allocated(fu)) allocate(fu(9))
-    if (.not. allocated(fv)) allocate(fv(9))
-    
-    if (.not. allocated(u_rotated)) allocate(u_rotated(my1:py1, mz1:pz1, 6), v_rotated(my1:py1, mz1:pz1, 6))
-    if (.not. allocated(u_hat)) allocate(u_hat(my1:py1, mz1:pz1, 6), v_hat(my1:py1, mz1:pz1, 6))
+    associate(u_rotated => I%work_u_rotated, v_rotated => I%work_v_rotated, &
+              u_hat => I%work_u_hat, v_hat => I%work_v_hat)
 
     !> Block Boundary Fields
     if (ib == 2) then
@@ -464,6 +459,7 @@ contains
 
        end do
     end do
+    end associate
   end subroutine Couple_Interface_x
 
 
@@ -475,7 +471,7 @@ contains
 
     integer, intent(in) :: my1, mz1, py1, pz1 !< Grid length
     real(kind = wp), dimension(:,:,:), allocatable, intent(in) :: X_l1, X_m1, X_n1 !< Local basis vectors
-    real(kind = wp), dimension(:,:,:), allocatable, intent(inout) :: u, v !< Field variables
+    real(kind = wp), dimension(:,:,:), intent(inout) :: u, v !< Field variables
 
     real(kind = wp) :: u1, u2, u3, v1, v2, v3, Tu_x, Tu_y, Tu_z, Tv_x, Tv_y, Tv_z !< Local work variables
     integer :: y, z !< Local grid indices
@@ -532,7 +528,7 @@ contains
     ! Rotate field variables in local basis vectors
     integer, intent(in) :: my1, mz1, py1, pz1 ! Grid length
     real(kind = wp), dimension(:,:,:), allocatable, intent(in) :: X_l1, X_m1, X_n1                               ! Local basis vectors
-    real(kind = wp), dimension(:,:,:), allocatable, intent(inout) :: u, v                                        ! Field variables
+    real(kind = wp), dimension(:,:,:), intent(inout) :: u, v                                        ! Field variables
 
     real(kind = wp) :: u1, u2, u3, v1, v2, v3, Tu_x, Tu_y, Tu_z, Tv_x, Tv_y, Tv_z               ! Local work variables
     integer :: y, z                                                                        ! Local grid indices

@@ -232,6 +232,12 @@ module block
      if (B%G%C%rank_ms /= MPI_PROC_NULL) local_lqrs(3) = 0
      if (B%G%C%rank_ps /= MPI_PROC_NULL) local_rqrs(3) = 0
      call init_boundaries(B%boundary_vars, B%G%C, local_lqrs, local_rqrs)
+
+     ! Allocate reusable face workspaces once. These replace procedure-local
+     ! allocatable SAVE arrays used during every RK stage.
+     allocate(B%work_boundary_q(B%G%C%mr:B%G%C%pr, B%G%C%ms:B%G%C%ps, 9))
+     allocate(B%work_boundary_r(B%G%C%mq:B%G%C%pq, B%G%C%ms:B%G%C%ps, 9))
+     allocate(B%work_boundary_s(B%G%C%mq:B%G%C%pq, B%G%C%mr:B%G%C%pr, 9))
      
      B%tau0 = 1.0_wp/(0.315949074074074_wp)
      

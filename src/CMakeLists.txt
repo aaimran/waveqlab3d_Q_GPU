@@ -170,6 +170,8 @@ add_test(NAME mpi_test1
     -D prefix=test_rup_cart_fric
     -D t=1
     -D n=${no_mpi_proc}
+    -D TEST_PROBLEMS_DIR=${CMAKE_CURRENT_SOURCE_DIR}/../test_problems
+    -D RESULT_CHECKER=${CMAKE_CURRENT_SOURCE_DIR}/../python/read_binary.py
     -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/run_mpi_test.cmake)
 
 add_test(NAME q8_dynamic_decomposition
@@ -270,6 +272,8 @@ add_test(NAME mpi_test2
     -D prefix=test_rup_curv_fric
     -D t=2
     -D n=${no_mpi_proc}
+    -D TEST_PROBLEMS_DIR=${CMAKE_CURRENT_SOURCE_DIR}/../test_problems
+    -D RESULT_CHECKER=${CMAKE_CURRENT_SOURCE_DIR}/../python/read_binary.py
     -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/run_mpi_test.cmake)
 
 add_test(NAME premesh_test1
@@ -278,6 +282,8 @@ add_test(NAME premesh_test1
     -D prefix=test_rup_cart_fric
     -D t=1
     -D n=${no_mpi_proc}
+    -D TEST_PROBLEMS_DIR=${CMAKE_CURRENT_SOURCE_DIR}/../test_problems
+    -D RESULT_CHECKER=${CMAKE_CURRENT_SOURCE_DIR}/../python/read_binary.py
     -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/run_test.cmake)
 
 add_test(NAME premesh_test2
@@ -286,6 +292,8 @@ add_test(NAME premesh_test2
     -D prefix=test_rup_curv_fric
     -D t=2
     -D n=${no_mpi_proc}
+    -D TEST_PROBLEMS_DIR=${CMAKE_CURRENT_SOURCE_DIR}/../test_problems
+    -D RESULT_CHECKER=${CMAKE_CURRENT_SOURCE_DIR}/../python/read_binary.py
     -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/run_test.cmake)
 
 add_test(NAME serial_test1
@@ -294,6 +302,8 @@ add_test(NAME serial_test1
     -D prefix=test_rup_cart_fric
     -D t=1
     -D n=1
+    -D TEST_PROBLEMS_DIR=${CMAKE_CURRENT_SOURCE_DIR}/../test_problems
+    -D RESULT_CHECKER=${CMAKE_CURRENT_SOURCE_DIR}/../python/read_binary.py
     -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/run_mpi_test.cmake)
 
 add_test(NAME serial_test2
@@ -302,6 +312,8 @@ add_test(NAME serial_test2
     -D prefix=test_rup_curv_fric
     -D t=2
     -D n=1
+    -D TEST_PROBLEMS_DIR=${CMAKE_CURRENT_SOURCE_DIR}/../test_problems
+    -D RESULT_CHECKER=${CMAKE_CURRENT_SOURCE_DIR}/../python/read_binary.py
     -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/run_mpi_test.cmake)
 
 ##############################################################
