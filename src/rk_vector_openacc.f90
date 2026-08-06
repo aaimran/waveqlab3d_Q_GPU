@@ -14,7 +14,7 @@ contains
     byte_count = int(size(rate),8)*int(storage_size(0.0_wp)/8,8)
     if (.not.acc_is_present(rate, byte_count)) &
          error stop 'RK rate array is not present on device'
-    call acc_update_device(rate, byte_count)
+    !$acc update device(rate)
     !$acc parallel loop gang vector collapse(4) present(rate)
     do component = lbound(rate,4), ubound(rate,4)
        do k = lbound(rate,3), ubound(rate,3)
@@ -25,7 +25,7 @@ contains
           end do
        end do
     end do
-    call acc_update_self(rate, byte_count)
+    !$acc update self(rate)
   end subroutine scale_rate_array
 
   subroutine update_state_array(state, rate, increment)
@@ -41,8 +41,8 @@ contains
     if (.not.acc_is_present(state, state_bytes) .or. &
         .not.acc_is_present(rate, rate_bytes)) &
          error stop 'RK state/rate array is not present on device'
-    call acc_update_device(state, state_bytes)
-    call acc_update_device(rate, rate_bytes)
+    !$acc update device(state)
+    !$acc update device(rate)
     !$acc parallel loop gang vector collapse(4) present(state,rate)
     do component = lbound(state,4), ubound(state,4)
        do k = lbound(state,3), ubound(state,3)
@@ -54,6 +54,6 @@ contains
           end do
        end do
     end do
-    call acc_update_self(state, state_bytes)
+    !$acc update self(state)
   end subroutine update_state_array
 end module rk_vector_kernels
