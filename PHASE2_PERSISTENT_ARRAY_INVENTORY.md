@@ -103,3 +103,8 @@ payload across ranks. The fixed and fractional reserves have validated
 environment overrides for controlled experiments. Deterministic CTests inject
 both sufficient and insufficient synthetic capacities; CPU runs skip the
 accelerator-capacity decision.
+
+H100 qualification on 2026-08-06 passed both deterministic cases. A Q8 run
+using the scheduler-visible 81559 MiB capacity retained 72,269.139 MiB of
+headroom after the default reserves and its 109.961 MiB predicted persistent
+payload. The selected six-test NVHPC/OpenACC numerical suite also passed.

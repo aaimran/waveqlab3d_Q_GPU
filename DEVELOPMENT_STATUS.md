@@ -215,3 +215,23 @@ CTest fixtures inject sufficient and insufficient capacities. The login-node
 GNU debug build and selected fQ8/Q8/Q4/traditional/upwind/upwind-DRP suite
 passed 6/6 while `WQL3D_GPU_MEMORY_BYTES=1` confirmed that CPU execution is not
 rejected. NVHPC compilation and H100 pass/fail qualification are next.
+
+Punakha H100 capacity qualification passed on 2026-08-06. NVHPC 26.5 built
+the OpenACC backend, and deterministic synthetic-capacity tests passed for
+both an 8 GiB acceptance case and a 1 MiB rejection case. The selected
+fQ8/Q8/Q4/traditional/upwind/upwind-DRP suite passed 6/6 in 34.23 s. With the
+physical H100 capacity configured as 81559 MiB, the Q8 fixture reported:
+
+```text
+predicted persistent payload:    109.961 MiB
+fixed reserve:                  1024.000 MiB
+fractional reserve:             8155.900 MiB (10%)
+usable capacity:               72379.100 MiB
+remaining headroom:            72269.139 MiB
+decision: PASS
+```
+
+The Q8 final diagnostics remained `max|field|=1.8221E+02` and
+`max|memory|=1.4544E+01`. The GPU capacity/headroom gate is closed. Remaining
+Phase 2 gates are steady-state allocation evidence and threaded CPU
+race-safety evidence.

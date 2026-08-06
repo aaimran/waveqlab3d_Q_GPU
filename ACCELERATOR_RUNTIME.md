@@ -203,3 +203,22 @@ ERROR accelerator runtime: local MPI ranks=2 exceed visible GPUs=1
 
 The runtime called `MPI_Abort` with error code 92 before input parsing or domain
 allocation. This is the expected negative-test result.
+
+## H100 capacity qualification
+
+Verified on 2026-08-06 with NVHPC 26.5 and one H100. The deterministic 8 GiB
+acceptance test and 1 MiB rejection test both passed. A one-rank Q8 run with
+`WQL3D_GPU_MEMORY_BYTES=85520809984` reported:
+
+```text
+predicted persistent payload:    109.961 MiB
+configured device capacity:    81559.000 MiB
+fixed reserve:                  1024.000 MiB
+fractional reserve:             8155.900 MiB (10%)
+usable capacity:               72379.100 MiB
+remaining headroom:            72269.139 MiB
+decision: PASS
+```
+
+The fQ8/Q8/Q4/traditional/upwind/upwind-DRP numerical selection passed 6/6 in
+34.23 seconds, with unchanged Q8 final-state diagnostics.
