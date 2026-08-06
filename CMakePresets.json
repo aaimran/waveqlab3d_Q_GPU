@@ -1,0 +1,54 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 24, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "cpu-debug",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/cpu-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "WQL3D_ENABLE_OPENACC": "OFF",
+        "WQL3D_ENABLE_CUDA_AWARE_MPI": "OFF"
+      }
+    },
+    {
+      "name": "cpu-release",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/cpu-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "WQL3D_ENABLE_OPENACC": "OFF",
+        "WQL3D_ENABLE_CUDA_AWARE_MPI": "OFF"
+      }
+    },
+    {
+      "name": "gpu-h100",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/gpu-h100",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_Fortran_COMPILER": "nvfortran",
+        "WQL3D_ENABLE_OPENACC": "ON",
+        "WQL3D_ENABLE_CUDA_AWARE_MPI": "OFF",
+        "WQL3D_GPU_ARCH": "cc90"
+      }
+    },
+    {
+      "name": "gpu-h100-cuda-aware-mpi",
+      "inherits": "gpu-h100",
+      "binaryDir": "${sourceDir}/build/gpu-h100-cuda-aware-mpi",
+      "cacheVariables": { "WQL3D_ENABLE_CUDA_AWARE_MPI": "ON" }
+    }
+  ],
+  "buildPresets": [
+    { "name": "cpu-debug", "configurePreset": "cpu-debug" },
+    { "name": "cpu-release", "configurePreset": "cpu-release" },
+    { "name": "gpu-h100", "configurePreset": "gpu-h100" },
+    { "name": "gpu-h100-cuda-aware-mpi", "configurePreset": "gpu-h100-cuda-aware-mpi" }
+  ],
+  "testPresets": [
+    { "name": "cpu-debug", "configurePreset": "cpu-debug", "output": { "outputOnFailure": true } },
+    { "name": "cpu-release", "configurePreset": "cpu-release", "output": { "outputOnFailure": true } }
+  ]
+}
