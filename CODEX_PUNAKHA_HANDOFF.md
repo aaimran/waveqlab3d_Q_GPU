@@ -3,7 +3,7 @@
 Date: 2026-08-06  
 Repository: `/scratch/aimran/waveqlab3d_Q_GPU`  
 Branch: `main`  
-Handoff baseline commit: `cee9e79 Close steady-state allocation and thread-safety gates`
+Handoff baseline: Phase 3 implementation through `92baf7d`
 
 ## Purpose of this document
 
@@ -44,13 +44,15 @@ the CPU solver as the numerical oracle throughout the migration.
    - Point scratch, persistent face workspaces, FD fixtures, and interface gate.
 4. `PHASE2_PERSISTENT_ARRAY_INVENTORY.md`
    - Structural inventory and exact runtime payload accounting.
-5. `ACCELERATOR_RUNTIME.md`
+5. `PHASE3_DEVICE_DATA_OWNERSHIP.md`
+   - Explicit leaf residency, host update, transfer, memory, and cleanup gates.
+6. `ACCELERATOR_RUNTIME.md`
    - Local-rank discovery, H100 binding, and oversubscription rules.
-6. `NVHPC_shutdown_regression_fix.md`
+7. `NVHPC_shutdown_regression_fix.md`
    - Important NVHPC optional-argument correctness fix.
-7. `punakha_nvdia_install.md`
+8. `punakha_nvdia_install.md`
    - Actual local NVHPC 26.5 installation and home-quota workaround.
-8. `CMakePresets.json` and `src/CMakeLists.txt`
+9. `CMakePresets.json` and `src/CMakeLists.txt`
    - Current build variants and source ordering.
 
 Do not rely only on older “Next gate” prose near the top of
@@ -144,37 +146,34 @@ kernel timings.
 
 ## Current exact status
 
-Phases 0-2 are complete. GNU and NVHPC qualification covers numerical
-fixtures, scratch correction, the 178-component structural inventory, runtime
-byte and GPU-capacity accounting, zero-allocation RK evidence, and threaded CPU
-determinism. At `cee9e79`, the H100 selected suite passed 9/9 in 41.23 s and
-the locked interface passed in 41.21 s. The NVHPC allocation-audit suite passed
-8/8 in 1393.91 s, including the 1141.03 s locked-interface stress case.
+Phases 0-3 are complete. Phase 3 explicitly traverses every allocated instance
+of all 158 device-policy declarations, retains them across timestepping,
+provides an explicit host-update API, validates presence, and deletes leaves in
+reverse order. The H100 smoke reconciled 32.334 MiB of inventory/traversal
+payload with a 42.000 MiB runtime allocation delta and 9.666 MiB overhead.
+Focused H100 coverage passed 11/11 in 105.16 s; CPU oracle coverage passed 7/7
+in 30.59 s. NVHPC notifications showed no RK transfer or kernel launch.
 
-Phase 3 is next. Do not offload a numerical kernel until its persistent-device
-ownership gate is complete.
+No numerical GPU kernel is offloaded yet. Phase 4 is next.
 
 ## Exact next implementation task
 
-Implement the smallest Phase 3 persistent-device ownership smoke test without
-changing numerical results.
+Offload the smallest low-risk Phase 4 RK vector kernels without changing
+numerical results.
 
 Recommended safe design:
 
-1. Use the inventory's device-policy classifications to select the first
-   complete, explicit set of allocatable leaf arrays.
-2. Add backend-neutral enter/exit APIs, with a no-op CPU implementation and an
-   OpenACC implementation. Never implicitly deep-copy `domain_type`.
-3. Enter data only after domain/output initialization and capacity approval;
-   exit in reverse ownership order before host deallocation.
-4. Keep all numerical loops on the host in this gate. Add the explicit host
-   synchronization needed so host execution remains the oracle.
-5. Add a short no-kernel H100 smoke test that proves enter, presence, host
-   execution/synchronization, and clean exit.
-6. Compare runtime device allocation with the predicted payload within a
-   documented overhead, and verify no full-volume transfer occurs inside an RK
-   timestep.
-7. Re-run CPU and H100 numerical fixtures unchanged. Keep CUDA-aware MPI off.
+1. Port `F%DF = A*F%DF` and `F%F = F%F + dt*F%DF` first, as separate kernels.
+2. Preserve a CPU implementation and use the existing persistent data with
+   `present` requirements; never add implicit copies.
+3. Preserve the x-contiguous vector direction and make gang/vector/collapse
+   choices explicit.
+4. Add asymmetric local-shape unit tests and a synthetic one-stage/one-step
+   rate/state comparison against CPU.
+5. Qualify a complete elastic run and then attenuation/PML updates separately.
+6. Use NVHPC notification/profiling evidence to prove kernels execute on H100
+   and no hidden transfer occurs inside RK.
+7. Keep CUDA-aware MPI disabled and do not port the spatial RHS in Phase 4.
 
 ## Punakha environment
 
@@ -376,20 +375,21 @@ Paste this into Codex after opening the remote repository:
 > `CODEX_PUNAKHA_HANDOFF.md` completely, then read the referenced plan and
 > status documents in its required order. Verify Git status and the Punakha
 > NVHPC/MPI environment. Summarize the current migration state and implement
-> the smallest safe Phase 3 persistent-device-data smoke test: explicit leaf
-> ownership, no implicit derived-type deep copy, and no numerical kernel
-> offload. Do not modify `waveqlab3d_Q` or enable CUDA-aware MPI. Verify CPU and
-> H100 builds, device presence/cleanup and unchanged numerical results, then
-> update the documentation.
+> the smallest safe Phase 4 RK vector-kernel offload using the qualified
+> persistent leaf ownership and explicit `present` data. Keep a CPU path, do
+> not port the spatial RHS, do not modify `waveqlab3d_Q`, and do not enable
+> CUDA-aware MPI. Verify asymmetric kernel tests, CPU/H100 numerical results,
+> actual H100 launches, and absence of implicit RK transfers, then update the
+> documentation.
 
 ## Definition of a successful handoff
 
 The new session understands that:
 
 - the remote Punakha repository is now authoritative;
-- Phase 2 is closed with GNU and NVHPC evidence;
+- Phases 2 and 3 are closed with GNU and NVHPC/H100 evidence;
 - exact persistent payload and capacity/headroom accounting already exist;
-- explicit Phase 3 device-data ownership is the immediate target;
+- low-risk Phase 4 RK vector kernels are the immediate target;
 - no numerical GPU kernel is currently offloaded;
 - the CPU oracle and single-source CPU/GPU codebase must remain intact;
 - every change requires CPU plus NVHPC/H100 regression evidence.

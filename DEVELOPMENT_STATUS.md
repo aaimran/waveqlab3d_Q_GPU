@@ -4,8 +4,8 @@ Last updated: 2026-08-06
 
 ## Current phase
 
-Phases 0-2 are complete and qualified with GNU and NVHPC. Phase 3 persistent
-device-data ownership is next; no numerical kernel is offloaded yet.
+Phases 0-3 are complete and qualified with GNU and NVHPC. Phase 4 low-risk RK
+vector-kernel offload is next; no numerical kernel is offloaded yet.
 
 ## Implemented
 
@@ -28,6 +28,9 @@ device-data ownership is next; no numerical kernel is offloaded yet.
 - Seventeen point-stencil routines now use private fixed nine-component work
   arrays; 53 hot-path first-call allocations and their shared `save` state were
   removed reproducibly.
+- All 158 `copyin`/`create` persistent-array declarations now have generated,
+  explicit OpenACC leaf traversal with presence checks, exact byte accounting,
+  reverse cleanup, and an explicit host-update API.
 
 ## Not implemented yet
 
@@ -38,15 +41,13 @@ device-data ownership is next; no numerical kernel is offloaded yet.
 
 ## Next gate
 
-1. Add explicit OpenACC enter/exit ownership for every device-resident
-   allocatable leaf; do not deep-copy `domain_type`.
-2. Keep initialization and numerical kernels on the host for the first smoke
-   test.
-3. Add explicit host-update interfaces for diagnostics/output and reverse-order
-   device cleanup.
-4. Verify a no-kernel data-lifetime smoke test on H100, reconcile measured
-   device use with the 178-component inventory, and confirm no RK transfers.
-5. Re-run CPU and OpenACC numerical regressions unchanged.
+1. Offload the low-risk `DF` scaling and `F` update RK vector kernels using the
+   existing persistent leaf ownership.
+2. Add asymmetric-shape kernel tests and one synthetic complete RK update.
+3. Preserve the CPU implementation and frozen numerical oracle.
+4. Require `present` data and verify no implicit transfers with NVHPC runtime
+   notifications/profiling.
+5. Keep CUDA-aware MPI disabled.
 
 ## Local verification
 
@@ -262,3 +263,15 @@ audit build passed the unit plus plane, Q8, Q4, traditional, upwind,
 upwind-DRP, and locked-interface tests (8/8, 1393.91 s). The locked-interface
 debug allocation run accounted for 1141.03 s and reported zero timestep heap
 calls. Phase 2 is therefore closed.
+
+Phase 3 persistent device-data ownership completed on Punakha on 2026-08-06.
+Generated traversal covers all 158 device-policy declarations without mapping
+`domain_type`; the CPU backend remains a no-op. The strict H100 smoke mapped 96
+allocated leaves, matched the 32.334 MiB inventory exactly, measured 42.000 MiB
+of device use (9.666 MiB runtime/allocator overhead), exercised explicit host
+synchronization, and removed every present-table entry during reverse cleanup.
+NVHPC notification output showed all 97 uploads before timestepping, no RK
+transfers, and zero kernel launches. Focused H100 coverage passed 11/11 in
+105.16 s, CPU oracle coverage passed 7/7 in 30.59 s, and allocation-tracked
+plane/Q8 passed 2/2 in 69.57 s. Phase 3 is closed; see
+`PHASE3_DEVICE_DATA_OWNERSHIP.md`.

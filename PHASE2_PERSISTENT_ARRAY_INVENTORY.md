@@ -1,7 +1,7 @@
 # Phase 2 persistent-array inventory
 
 Date: 2026-08-06  
-Status: structural inventory, runtime payload accounting, and capacity enforcement implemented
+Status: complete; consumed by qualified Phase 3 explicit device traversal
 
 ## Purpose
 
@@ -108,3 +108,9 @@ H100 qualification on 2026-08-06 passed both deterministic cases. A Q8 run
 using the scheduler-visible 81559 MiB capacity retained 72,269.139 MiB of
 headroom after the default reserves and its 109.961 MiB predicted persistent
 payload. The selected six-test NVHPC/OpenACC numerical suite also passed.
+
+Phase 3 now consumes this inventory reproducibly. The generated OpenACC module
+covers all 158 `copyin`/`create` declarations and its smoke test requires the
+explicit mapped payload to equal `persistent_memory_bytes` categories 1-6.
+The qualified one-block elastic case matched at 32.334 MiB; see
+`PHASE3_DEVICE_DATA_OWNERSHIP.md`.
