@@ -347,9 +347,16 @@ module block
    subroutine copy_fields_to_boundary(B)
  
      type(block_type), intent(inout) :: B
- 
-     B%B(1)%F = B%F%F(B%G%C%mq,:,:,:)
-     B%B(2)%F = B%F%F(B%G%C%pq,:,:,:)
+     integer :: j, k, field
+
+     do field = 1, size(B%F%F,4)
+       do k = lbound(B%B(1)%F,2), ubound(B%B(1)%F,2)
+         do j = lbound(B%B(1)%F,1), ubound(B%B(1)%F,1)
+           B%B(1)%F(j,k,field) = B%F%F(B%G%C%mq,j,k,field)
+           B%B(2)%F(j,k,field) = B%F%F(B%G%C%pq,j,k,field)
+         end do
+       end do
+     end do
  !     B%B(3)%F = B%F%F(:,B%G%C%mr,:,:)
  !     B%B(4)%F = B%F%F(:,B%G%C%pr,:,:)
  !     B%B(5)%F = B%F%F(:,:,B%G%C%ms,:)

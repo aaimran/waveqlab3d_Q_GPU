@@ -182,7 +182,7 @@ device-memory and headroom preflight, plus steady-state allocation and threaded
 CPU evidence. No numerical loop will be offloaded until these gates pass.
 
 The structural persistent-array inventory is now reproducible through
-`scripts/inventory_persistent_arrays.py`. It covers 174 allocatable components
+`scripts/inventory_persistent_arrays.py`. It covers 178 allocatable components
 and records ownership, rank/shape, role, device policy, initialization,
 mutation, communication, and output use. Drift-check mode passes. Runtime byte
 totals, predicted device capacity, and headroom enforcement remain next.
@@ -235,3 +235,20 @@ The Q8 final diagnostics remained `max|field|=1.8221E+02` and
 `max|memory|=1.4544E+01`. The GPU capacity/headroom gate is closed. Remaining
 Phase 2 gates are steady-state allocation evidence and threaded CPU
 race-safety evidence.
+
+The remaining Phase 2 allocation and threaded gates are implemented and have
+passed login-node GNU qualification. The transitive source audit covers 131
+procedures reachable from `time_step_RK`. A linker-level allocation tracker
+then found and drove removal of hidden heap temporaries in near-boundary point
+scratch, all six physical-boundary result functions, noncontiguous interface
+face copies, and plane-output gathering. The allocation-audit build reports
+zero timestep allocation calls for Q8, Q4, all three order-6 elastic families,
+plane output, and the serial/two-rank locked-interface oracle.
+
+The optional OpenMP build parallelizes the six independent physical-boundary
+face loops with explicit private point state. Its 1/2/4-thread determinism
+fixture reproduces `max|field|=1.6623E+02`, and the selected threaded
+fQ8/Q8/Q4/traditional/upwind/upwind-DRP plus plane-output suite passed 8/8 in
+64.94 s with four threads. Separate per-target Fortran module directories also
+removed a parallel-build race between `waveqlab3d` and `pre_wql3d`. NVHPC and
+H100 qualification of these changes is next.

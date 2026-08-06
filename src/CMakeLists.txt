@@ -20,13 +20,18 @@ set(WQL3D_OPENACC_LITERAL ".false.")
 set(WQL3D_CUDA_AWARE_MPI_LITERAL ".false.")
 set(WQL3D_BACKEND_NAME "cpu")
 set(WQL3D_ACCELERATOR_RUNTIME accelerator_runtime_cpu.f90)
+set(WQL3D_ALLOCATION_TRACKING allocation_tracking_disabled.f90)
 if(WQL3D_ENABLE_OPENACC)
     set(WQL3D_OPENACC_LITERAL ".true.")
     set(WQL3D_BACKEND_NAME "openacc")
     set(WQL3D_ACCELERATOR_RUNTIME accelerator_runtime_openacc.f90)
 endif()
+
 if(WQL3D_ENABLE_CUDA_AWARE_MPI)
     set(WQL3D_CUDA_AWARE_MPI_LITERAL ".true.")
+endif()
+if(WQL3D_ENABLE_ALLOCATION_TRACKING)
+    set(WQL3D_ALLOCATION_TRACKING allocation_tracking_enabled.f90 allocation_tracker.c)
 endif()
 configure_file(accelerator_build_config.f90.in
     ${CMAKE_CURRENT_BINARY_DIR}/accelerator_build_config.f90 @ONLY)
@@ -66,6 +71,7 @@ endif(APPLE)
 set(WQL3D_SRC
   ${CMAKE_CURRENT_BINARY_DIR}/accelerator_build_config.f90
   ${WQL3D_ACCELERATOR_RUNTIME}
+  ${WQL3D_ALLOCATION_TRACKING}
   fault_output.f90
   iface.f90
   block.f90
@@ -129,6 +135,14 @@ set (PRE_WQL3D_SRC
 
 add_executable (waveqlab3d ${WQL3D_SRC})
 add_executable (pre_wql3d ${PRE_WQL3D_SRC})
+set_target_properties(waveqlab3d PROPERTIES
+  Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/waveqlab3d_modules)
+set_target_properties(pre_wql3d PROPERTIES
+  Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/pre_wql3d_modules)
+target_include_directories(waveqlab3d PRIVATE
+  ${CMAKE_CURRENT_BINARY_DIR}/waveqlab3d_modules)
+target_include_directories(pre_wql3d PRIVATE
+  ${CMAKE_CURRENT_BINARY_DIR}/pre_wql3d_modules)
 target_link_libraries (waveqlab3d ${MPI_Fortran_LIBRARIES})
 target_link_libraries (pre_wql3d ${MPI_Fortran_LIBRARIES})
 #target_link_libraries (waveqlab3d ${HDF5_LIBRARIES})
@@ -155,6 +169,21 @@ add_test(NAME fq8_effective_response_unit
 # the sibling mpiexec binary on this cluster does not.
 get_filename_component(MPIEXEC_DIRECTORY ${MPIEXEC_EXECUTABLE} DIRECTORY)
 set(WQL3D_MPI_RUNNER ${MPIEXEC_DIRECTORY}/mpirun)
+
+if(WQL3D_ENABLE_OPENMP)
+  add_test(NAME openmp_elastic_determinism
+    COMMAND ${CMAKE_COMMAND}
+      -D EXE=$<TARGET_FILE:waveqlab3d>
+      -D INPUT=${CMAKE_CURRENT_SOURCE_DIR}/../inputfile/test_elastic_traditional_o6.in
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/run_openmp_determinism.cmake)
+endif()
+
+add_test(NAME elastic_plane_output_smoke
+  COMMAND ${CMAKE_COMMAND}
+    -D EXE=$<TARGET_FILE:waveqlab3d>
+    -D INPUT=${CMAKE_CURRENT_SOURCE_DIR}/../inputfile/test_elastic_plane_o6.in
+    -D TEST_DIR=${CMAKE_CURRENT_BINARY_DIR}/test/plane_output
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/run_plane_output_smoke.cmake)
 
 if(WQL3D_ENABLE_OPENACC)
   add_test(NAME gpu_memory_capacity_sufficient

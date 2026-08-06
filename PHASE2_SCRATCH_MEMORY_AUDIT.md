@@ -241,7 +241,30 @@ consistency. All Phase 2 numerical gates now pass with GNU and NVHPC:
 scratch-safety, persistent face ownership/accounting, the three order-6 FD
 families, and locked-interface decomposition consistency.
 
-Phase 2 is not yet closed. The roadmap still requires a complete persistent
-array inventory, total host/predicted-device memory reporting, an explicit
-headroom preflight, and steady-state allocation/thread-safety evidence.
-Numerical GPU offload remains intentionally outside Phase 2.
+## Steady-state allocation and threaded evidence
+
+The reproducible source gate follows calls transitively from `time_step_RK`:
+
+```bash
+python3 scripts/audit_steady_state_allocations.py
+```
+
+It currently covers 131 compiled procedures and rejects explicit allocation or
+deallocation anywhere in that graph. The `cpu-allocation-audit` preset adds a
+linker-level counter around `malloc`, `calloc`, and `realloc`, begins counting
+after complete domain initialization, and aborts with `RUN-ALLOC-001` if any
+solver-object heap call occurs before the timestep loop ends. This runtime
+gate exposed compiler temporaries that a text scan could not see and drove
+their removal from physical boundaries and interface face copying.
+
+The runtime tracker reports zero allocation calls for the Q4/Q8 and three
+order-6 decomposition fixtures, persistent plane output, and both ownership
+modes of the locked-interface oracle.
+
+The `cpu-threaded` preset enables OpenMP on the six physical-boundary face
+loops. All per-point state is explicitly private and each iteration writes a
+unique face element. A determinism test compares 1, 2, and 4 threads, while the
+selected four-thread numerical suite exercises Q4, Q8, and all order-6 elastic
+families. Login-node GNU qualification passed; NVHPC/H100 qualification is the
+remaining Phase 2 closure check. Numerical GPU offload remains intentionally
+outside Phase 2.

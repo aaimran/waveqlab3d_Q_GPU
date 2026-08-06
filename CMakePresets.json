@@ -23,6 +23,22 @@
       }
     },
     {
+      "name": "cpu-allocation-audit",
+      "inherits": "cpu-debug",
+      "binaryDir": "${sourceDir}/build/cpu-allocation-audit",
+      "cacheVariables": {
+        "WQL3D_ENABLE_ALLOCATION_TRACKING": "ON"
+      }
+    },
+    {
+      "name": "cpu-threaded",
+      "inherits": "cpu-debug",
+      "binaryDir": "${sourceDir}/build/cpu-threaded",
+      "cacheVariables": {
+        "WQL3D_ENABLE_OPENMP": "ON"
+      }
+    },
+    {
       "name": "gpu-h100",
       "generator": "Unix Makefiles",
       "binaryDir": "${sourceDir}/build/gpu-h100",
@@ -45,11 +61,15 @@
   "buildPresets": [
     { "name": "cpu-debug", "configurePreset": "cpu-debug" },
     { "name": "cpu-release", "configurePreset": "cpu-release" },
+    { "name": "cpu-allocation-audit", "configurePreset": "cpu-allocation-audit" },
+    { "name": "cpu-threaded", "configurePreset": "cpu-threaded" },
     { "name": "gpu-h100", "configurePreset": "gpu-h100" },
     { "name": "gpu-h100-cuda-aware-mpi", "configurePreset": "gpu-h100-cuda-aware-mpi" }
   ],
   "testPresets": [
     { "name": "cpu-debug", "configurePreset": "cpu-debug", "output": { "outputOnFailure": true } },
-    { "name": "cpu-release", "configurePreset": "cpu-release", "output": { "outputOnFailure": true } }
+    { "name": "cpu-release", "configurePreset": "cpu-release", "output": { "outputOnFailure": true } },
+    { "name": "cpu-allocation-audit", "configurePreset": "cpu-allocation-audit", "output": { "outputOnFailure": true } },
+    { "name": "cpu-threaded", "configurePreset": "cpu-threaded", "output": { "outputOnFailure": true } }
   ]
 }

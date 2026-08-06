@@ -30,6 +30,8 @@ program main
   use time_step, only : RK_type,init_RK,time_step_RK
   use accelerator_runtime, only : initialize_accelerator_runtime, &
                                   finalize_accelerator_runtime
+  use allocation_tracking, only : begin_timestep_allocation_tracking, &
+                                  end_timestep_allocation_tracking
   implicit none
 
   ! domain_type contains all properties of a domain, including fields
@@ -94,6 +96,7 @@ program main
 
   call init_RK(RK) ! Runge-Kutta coefficients
   call init_domain(D, infile, ifname, resolved_config) ! domain
+  call begin_timestep_allocation_tracking()
 
   !call create_dataset("seismogram1", 0, [0])
   !call create_dataset("seismogram2", 0, [0])
@@ -152,6 +155,8 @@ program main
         !    print *, 'coordinates : ', X1(mx1, 76, 201, :), X2(1, 76, 201, :)
      end if
   end do
+
+  call end_timestep_allocation_tracking()
 
   call close_domain(D)
   call finalize_accelerator_runtime()

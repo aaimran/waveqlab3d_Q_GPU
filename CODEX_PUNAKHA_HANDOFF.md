@@ -114,7 +114,7 @@ The following are complete and qualified with GNU and NVHPC:
   one-rank and two-rank final state.
 - A locked two-block 41-cubed interface oracle verifies nonzero transmission
   from block 1 to block 2 and one-rank/two-rank consistency.
-- Structural inventory covers 174 allocatable components.
+- Structural inventory covers 178 allocatable components.
 - Runtime payload accounting reports grid, material/Q, state/rate, PML,
   boundary/work, interface/source, output, maximum host/rank, and predicted
   device/rank bytes.
@@ -331,7 +331,7 @@ python3 scripts/inventory_persistent_arrays.py
 Expected drift-check result at the handoff baseline:
 
 ```text
-PASS: 174 persistent allocatable components
+PASS: 178 persistent allocatable components
 ```
 
 If this count changes, inspect the datatype diff and update the ownership/device

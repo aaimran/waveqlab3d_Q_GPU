@@ -315,6 +315,8 @@ module datatypes
       logical :: header_written = .false.
 
       real(kind = wp), allocatable :: vx(:,:), vy(:,:), vz(:,:)
+      real(kind = wp), allocatable :: vx_local(:,:), vy_local(:,:), vz_local(:,:)
+      real(kind = wp), allocatable :: recv_work(:)
    end type plane_output_plane
 
    type :: plane_output_type

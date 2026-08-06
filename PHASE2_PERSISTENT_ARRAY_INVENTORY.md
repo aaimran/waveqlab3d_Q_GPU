@@ -23,7 +23,7 @@ unexpectedly incomplete.
 
 ## Current coverage
 
-The inventory contains 174 allocatable components:
+The inventory contains 178 allocatable components:
 
 | Owner | Components |
 |---|---:|
@@ -35,7 +35,7 @@ The inventory contains 174 allocatable components:
 | `block_grid_t` | 5 |
 | `domain_type` | 4 |
 | `block_type` | 3 |
-| `plane_output_plane` | 3 |
+| `plane_output_plane` | 7 |
 | `block_fields` | 2 |
 | `block_pml` | 2 |
 | `block_plastic` | 1 |
@@ -58,7 +58,7 @@ The initial policy classification is:
 | `create` | 118 | Device-resident state, rate, attenuation, PML, or scratch storage |
 | `copyin` | 40 | Initialized host data copied once and normally immutable on device |
 | `host` | 8 | Host orchestration/output metadata |
-| `host/update` | 4 | Host output buffers populated explicitly from device data |
+| `host/update` | 8 | Host output buffers populated explicitly from device data |
 | `explicit leaves` | 4 | Allocatable ownership containers; never deep-copied implicitly |
 
 ## Safety boundary

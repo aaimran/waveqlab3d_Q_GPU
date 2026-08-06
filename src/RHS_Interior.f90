@@ -154,8 +154,8 @@ contains
     real(kind = wp) :: hq, hr, hs                                          ! spatial steps
 
     ! work arrays
-    real(kind = wp), dimension(:), allocatable :: Ux, Uy, Uz ! to hold derivatives
-    real(kind = wp), dimension(:), allocatable :: DU  ! to hold rates
+    real(kind = wp) :: Ux(9), Uy(9), Uz(9) ! point-local derivatives
+    real(kind = wp) :: DU(9)               ! point-local rates
      integer :: x, y, z
     real(kind = wp) :: rhoJ_inv, lambda2mu
     integer :: ix, iy, iz,  fx, fy, fz
@@ -191,7 +191,7 @@ contains
     hr = G%hr
     hs = G%hs
     
-    allocate(Ux(n), Uy(n), Uz(n), DU(n))
+    if (n /= 9) error stop 'RHS_near_boundaries requires nine elastic fields'
     
     ix = 6
     iy = 6
@@ -1619,7 +1619,7 @@ if (F%order .eq. 7) then
     ! construct boundary forcing
     if (boundary_vars%Lx > 0) then
        
-       U_q = BC_Lx(B, boundary_vars%Lx, mms_vars, t)
+       call BC_Lx(B, boundary_vars%Lx, mms_vars, t, U_q)
        
        do z = mz, pz
           do y = my, py
@@ -1643,7 +1643,7 @@ if (F%order .eq. 7) then
 
     if (boundary_vars%Rx > 0) then
        
-       U_q = BC_Rx(B, boundary_vars%Rx, mms_vars, t)
+       call BC_Rx(B, boundary_vars%Rx, mms_vars, t, U_q)
        
        do z = mz, pz
           do y = my, py
@@ -1668,7 +1668,7 @@ if (F%order .eq. 7) then
 
     if (boundary_vars%Ly > 0) then
        
-       U_r = BC_Ly(B, boundary_vars%Ly, mms_vars, t)
+       call BC_Ly(B, boundary_vars%Ly, mms_vars, t, U_r)
        
        do z = mz, pz
           do x = mx, px
@@ -1692,7 +1692,7 @@ if (F%order .eq. 7) then
 
     if (boundary_vars%Ry > 0) then
        
-       U_r = BC_Ry(B, boundary_vars%Ry, mms_vars, t)
+       call BC_Ry(B, boundary_vars%Ry, mms_vars, t, U_r)
        
        do z = mz, pz
           do x = mx, px
@@ -1717,7 +1717,7 @@ if (F%order .eq. 7) then
 
     if (boundary_vars%Lz > 0) then
       
-       U_s = BC_Lz(B, boundary_vars%Lz, mms_vars, t)
+       call BC_Lz(B, boundary_vars%Lz, mms_vars, t, U_s)
        
        do y = my, py
           do x = mx, px
@@ -1740,7 +1740,7 @@ if (F%order .eq. 7) then
 
     if (boundary_vars%Rz > 0) then
        
-       U_s = BC_Rz(B, boundary_vars%Rz, mms_vars, t)
+       call BC_Rz(B, boundary_vars%Rz, mms_vars, t, U_s)
 
        do y = my, py
           do x = mx, px

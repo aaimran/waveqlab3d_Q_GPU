@@ -47,7 +47,7 @@ contains
 
   end subroutine init_boundaries
 
-  function BC_Lx(B, type_of_bc, mms_vars, t) result(u_bc)
+  subroutine BC_Lx(B, type_of_bc, mms_vars, t, u_bc)
 
     use datatypes, only : block_type, mms_type
 
@@ -57,9 +57,9 @@ contains
     integer, intent(in) :: type_of_bc
     type(mms_type),intent(in) :: mms_vars 
     real(kind = wp), intent(in) :: t
-    real(kind = wp), dimension(:,:,:), allocatable :: u_bc
+    real(kind = wp), intent(out) :: u_bc(B%G%C%mr:,B%G%C%ms:,:)
 
-    integer :: mx, my, mz, px, py, pz, nf
+    integer :: mx, my, mz, px, py, pz
     real(kind = wp) :: c_p, c_s, rho, mu,lambda
     integer :: y, z
     real(kind = wp) :: q_x, q_y, q_z, norm, fu(9), ubc(9)
@@ -78,9 +78,7 @@ contains
     py = B%G%C%pr
     pz = B%G%C%ps
 
-    nf = size(B%F%F, 4)
    
-    if (.not. allocated(u_bc)) allocate(u_bc(my:py,mz:pz,nf))
 
      ! replace this as in above routines
     if (mms_vars%use_mms) then
@@ -91,6 +89,8 @@ contains
     ! end replace
 
 
+    !$omp parallel do collapse(2) private(z,y,fu,rho,mu,lambda,c_p,c_s,Zp,Zs, &
+    !$omp& q_x,q_y,q_z,norm,l,m,n,u,r,alpha,theta,ubc)
     do z = mz, pz
        do y = my, py
 
@@ -166,13 +166,14 @@ contains
           
        end do
     end do
+    !$omp end parallel do
 
 
 
-  end function BC_Lx
+  end subroutine BC_Lx
 
 
-  function BC_Rx(B, type_of_bc, mms_vars, t) result(u_bc)
+  subroutine BC_Rx(B, type_of_bc, mms_vars, t, u_bc)
 
     use datatypes, only : block_type, mms_type
 
@@ -182,9 +183,9 @@ contains
     integer, intent(in) :: type_of_bc
     type(mms_type),intent(in) :: mms_vars 
     real(kind = wp), intent(in) :: t
-    real(kind = wp), dimension(:,:,:), allocatable  :: u_bc
+    real(kind = wp), intent(out) :: u_bc(B%G%C%mr:,B%G%C%ms:,:)
 
-    integer :: mx, my, mz, px, py, pz, nf
+    integer :: mx, my, mz, px, py, pz
     real(kind = wp) :: c_p, c_s, rho, mu,lambda
     integer :: y, z
     real(kind = wp) :: norm, q_x, q_y, q_z, fu(9), ubc(9)
@@ -200,9 +201,7 @@ contains
     py = B%G%C%pr
     pz = B%G%C%ps
 
-    nf = size(B%F%F, 4)
 
-    if (.not.allocated(u_bc)) allocate(u_bc(my:py,mz:pz,nf))
 
     ! replace this as in above routines
     if (mms_vars%use_mms) then
@@ -212,6 +211,8 @@ contains
     end if
     ! end replace
 
+    !$omp parallel do collapse(2) private(z,y,fu,rho,mu,lambda,c_p,c_s,Zp,Zs, &
+    !$omp& q_x,q_y,q_z,norm,l,m,n,u,r,alpha,theta,ubc)
     do z = mz, pz
        do y = my, py
 
@@ -288,12 +289,13 @@ contains
           
        end do
     end do
+    !$omp end parallel do
 
 
-  end function BC_Rx
+  end subroutine BC_Rx
 
 
-  function BC_Ly(B, type_of_bc, mms_vars, t) result(u_bc)
+  subroutine BC_Ly(B, type_of_bc, mms_vars, t, u_bc)
 
     use datatypes, only : block_type, mms_type
 
@@ -303,9 +305,9 @@ contains
     integer, intent(in) :: type_of_bc
     type(mms_type),intent(in) :: mms_vars 
     real(kind = wp), intent(in) :: t
-    real(kind = wp), dimension(:,:,:), allocatable :: u_bc
+    real(kind = wp), intent(out) :: u_bc(B%G%C%mq:,B%G%C%ms:,:)
 
-    integer :: mx, my, mz, px, py, pz, nf
+    integer :: mx, my, mz, px, py, pz
     real(kind = wp) :: c_p, c_s, rho, mu,lambda
     integer :: x, z
     real(kind = wp) :: norm, r_x, r_y, r_z, fu(9), ubc(9)
@@ -322,10 +324,8 @@ contains
     py = B%G%C%pr
     pz = B%G%C%ps
 
-    nf = size(B%F%F, 4)
 
 
-    if (.not.allocated(u_bc)) allocate(u_bc(mx:px,mz:pz,nf))
 
     ! replace this as in above routines
     if (mms_vars%use_mms) then
@@ -335,6 +335,8 @@ contains
     end if
     ! end replace
 
+    !$omp parallel do collapse(2) private(z,x,fu,rho,mu,lambda,c_p,c_s,Zp,Zs, &
+    !$omp& r_x,r_y,r_z,norm,l,m,n,u,r,alpha,theta,ubc)
     do z = mz, pz
        do x = mx, px
 
@@ -410,12 +412,13 @@ contains
 
        end do
     end do
+    !$omp end parallel do
     
     
-  end function BC_Ly
+  end subroutine BC_Ly
 
 
-  function BC_Ry(B, type_of_bc, mms_vars, t) result(u_bc)
+  subroutine BC_Ry(B, type_of_bc, mms_vars, t, u_bc)
 
     use datatypes, only : block_type, mms_type
 
@@ -425,9 +428,9 @@ contains
     integer, intent(in) :: type_of_bc
     type(mms_type),intent(in) :: mms_vars 
     real(kind = wp), intent(in) :: t
-    real(kind = wp), dimension(:,:,:), allocatable :: u_bc
+    real(kind = wp), intent(out) :: u_bc(B%G%C%mq:,B%G%C%ms:,:)
 
-    integer :: mx, my, mz, px, py, pz, nf
+    integer :: mx, my, mz, px, py, pz
     real(kind = wp) :: c_p, c_s, rho, mu,lambda
     integer :: x, z
     real(kind = wp) :: norm, r_x, r_y, r_z, fu(9), ubc(9)
@@ -444,9 +447,7 @@ contains
     py = B%G%C%pr
     pz = B%G%C%ps
 
-    nf = size(B%F%F, 4)
 
-    if (.not.allocated(u_bc)) allocate(u_bc(mx:px,mz:pz,nf))
 
     if (mms_vars%use_mms) then
        switch = 1.0_wp
@@ -454,6 +455,8 @@ contains
        switch = 0.0_wp
     end if
 
+    !$omp parallel do collapse(2) private(z,x,fu,rho,mu,lambda,c_p,c_s,Zp,Zs, &
+    !$omp& r_x,r_y,r_z,norm,l,m,n,u,r,alpha,theta,ubc)
     do z = mz, pz
        do x = mx, px
 
@@ -529,11 +532,12 @@ contains
           
        end do
     end do
+    !$omp end parallel do
 
-  end function BC_Ry
+  end subroutine BC_Ry
 
 
-  function BC_Lz(B, type_of_bc, mms_vars, t) result(u_bc)
+  subroutine BC_Lz(B, type_of_bc, mms_vars, t, u_bc)
 
     use datatypes, only : block_type, mms_type
 
@@ -543,9 +547,9 @@ contains
     integer, intent(in) :: type_of_bc
     type(mms_type),intent(in) :: mms_vars 
     real(kind = wp), intent(in) :: t
-    real(kind = wp), dimension(:,:,:), allocatable :: u_bc
+    real(kind = wp), intent(out) :: u_bc(B%G%C%mq:,B%G%C%mr:,:)
 
-    integer :: mx, my, mz, px, py, pz, nf
+    integer :: mx, my, mz, px, py, pz
     real(kind = wp) :: c_p, c_s, rho, mu, lambda
     integer :: x, y
     real(kind = wp) :: norm, s_x, s_y, s_z, fu(9), ubc(9)
@@ -562,9 +566,7 @@ contains
     py = B%G%C%pr
     pz = B%G%C%ps
 
-    nf = size(B%F%F, 4)
 
-    if (.not.allocated(u_bc)) allocate(u_bc(mx:px,my:py,nf))
 
     if (mms_vars%use_mms) then
        switch = 1.0_wp
@@ -572,6 +574,8 @@ contains
        switch = 0.0_wp
     end if
 
+    !$omp parallel do collapse(2) private(y,x,fu,rho,mu,lambda,c_p,c_s,Zp,Zs, &
+    !$omp& s_x,s_y,s_z,norm,l,m,n,u,r,alpha,theta,ubc)
     do y = my, py
        do x = mx, px
 
@@ -647,12 +651,13 @@ contains
 
        end do
     end do
+    !$omp end parallel do
 
 
-  end function BC_Lz
+  end subroutine BC_Lz
 
 
-  function BC_Rz(B, type_of_bc, mms_vars, t) result(u_bc)
+  subroutine BC_Rz(B, type_of_bc, mms_vars, t, u_bc)
 
     use datatypes, only : block_type, mms_type
 
@@ -662,9 +667,9 @@ contains
     integer, intent(in) :: type_of_bc
     type(mms_type),intent(in) :: mms_vars 
     real(kind = wp), intent(in) :: t
-    real(kind = wp), dimension(:,:,:), allocatable :: u_bc
+    real(kind = wp), intent(out) :: u_bc(B%G%C%mq:,B%G%C%mr:,:)
 
-    integer :: mx, my, mz, px, py, pz, nf
+    integer :: mx, my, mz, px, py, pz
 
     real(kind = wp) :: c_p, c_s, rho, mu, lambda
     integer :: x, y
@@ -683,10 +688,8 @@ contains
     py = B%G%C%pr
     pz = B%G%C%ps
 
-    nf = size(B%F%F, 4)
 
 
-    if (.not.allocated(u_bc)) allocate(u_bc(mx:px,my:py,nf))
 
     if (mms_vars%use_mms) then
        switch = 1.0_wp
@@ -694,6 +697,8 @@ contains
        switch = 0.0_wp
     end if
 
+    !$omp parallel do collapse(2) private(y,x,fu,rho,mu,lambda,c_p,c_s,Zp,Zs, &
+    !$omp& s_x,s_y,s_z,norm,l,m,n,u,r,alpha,theta,ubc)
     do y = my, py
        do x = mx, px
 
@@ -770,9 +775,10 @@ contains
 
        end do
     end do
+    !$omp end parallel do
 
 
-  end function BC_Rz
+  end subroutine BC_Rz
 
   subroutine BCp(ubc, u, rho, mu, lambda, l, m, n, norm, Zs, Zp, r, alpha, theta)
 

@@ -94,7 +94,11 @@ contains
        if (allocated(D%plane_outputs(i)%P)) then
           do j = 1, size(D%plane_outputs(i)%P)
              category(7) = category(7) + bytes(D%plane_outputs(i)%P(j)%vx) + &
-                  bytes(D%plane_outputs(i)%P(j)%vy) + bytes(D%plane_outputs(i)%P(j)%vz)
+                  bytes(D%plane_outputs(i)%P(j)%vy) + bytes(D%plane_outputs(i)%P(j)%vz) + &
+                  bytes(D%plane_outputs(i)%P(j)%vx_local) + &
+                  bytes(D%plane_outputs(i)%P(j)%vy_local) + &
+                  bytes(D%plane_outputs(i)%P(j)%vz_local) + &
+                  bytes(D%plane_outputs(i)%P(j)%recv_work)
           end do
        end if
     end do
@@ -136,4 +140,3 @@ contains
   end subroutine add_material_four_dimensional
 
 end module persistent_memory
-

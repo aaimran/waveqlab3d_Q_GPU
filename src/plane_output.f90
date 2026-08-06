@@ -176,7 +176,26 @@ contains
       call open_plane_file(domain_name, P, block_num, axis_id)
     end if
 
+    if (participates) call init_plane_workspaces(P, G)
+
   end subroutine init_one_plane
+
+
+  subroutine init_plane_workspaces(P, G)
+    type(plane_output_plane), intent(inout) :: P
+    type(block_grid_t), intent(in) :: G
+    integer :: m1, p1, m2, p2, nloc1, nloc2
+
+    call local_plane_bounds(G%C, P%fixed_dir, P%fixed_index_global, m1, p1, m2, p2)
+    nloc1 = p1 - m1 + 1
+    nloc2 = p2 - m2 + 1
+    allocate(P%vx_local(nloc1,nloc2), P%vy_local(nloc1,nloc2), &
+         P%vz_local(nloc1,nloc2))
+    if (P%plane_rank == 0) then
+      allocate(P%vx(P%n1,P%n2), P%vy(P%n1,P%n2), P%vz(P%n1,P%n2))
+      allocate(P%recv_work(P%n1*P%n2))
+    end if
+  end subroutine init_plane_workspaces
 
 
   subroutine open_plane_file(domain_name, P, block_num, axis_id)
@@ -265,9 +284,6 @@ contains
     integer :: sender
     integer :: status(MPI_STATUS_SIZE)
 
-    real(kind=wp), allocatable :: vx_loc(:,:), vy_loc(:,:), vz_loc(:,:)
-    real(kind=wp), allocatable :: tmp(:,:)
-
     if (.not. P%enabled) return
     if (.not. P%active) return
 
@@ -281,19 +297,13 @@ contains
     nloc1 = p1 - m1 + 1
     nloc2 = p2 - m2 + 1
 
-    allocate(vx_loc(nloc1, nloc2), vy_loc(nloc1, nloc2), vz_loc(nloc1, nloc2))
-
-    call extract_local_plane(F, G%C, P%fixed_dir, P%fixed_index_global, m1, p1, m2, p2, vx_loc, vy_loc, vz_loc)
+    call extract_local_plane(F, G%C, P%fixed_dir, P%fixed_index_global, m1, p1, m2, p2, &
+         P%vx_local, P%vy_local, P%vz_local)
 
     if (P%plane_rank == 0) then
-
-      if (.not. allocated(P%vx)) then
-        allocate(P%vx(P%n1, P%n2), P%vy(P%n1, P%n2), P%vz(P%n1, P%n2))
-      end if
-
-      call place_patch(P%fixed_dir, P%vx, vx_loc, m1, p1, m2, p2)
-      call place_patch(P%fixed_dir, P%vy, vy_loc, m1, p1, m2, p2)
-      call place_patch(P%fixed_dir, P%vz, vz_loc, m1, p1, m2, p2)
+      call place_patch(P%fixed_dir, P%vx, P%vx_local, m1, p1, m2, p2)
+      call place_patch(P%fixed_dir, P%vy, P%vy_local, m1, p1, m2, p2)
+      call place_patch(P%fixed_dir, P%vz, P%vz_local, m1, p1, m2, p2)
 
       do src = 1, P%plane_size - 1
         call MPI_Recv(meta, 4, MPI_INTEGER, MPI_ANY_SOURCE, tag_meta, P%plane_comm, status, ierr)
@@ -302,17 +312,14 @@ contains
         nloc1 = meta(2) - meta(1) + 1
         nloc2 = meta(4) - meta(3) + 1
 
-        allocate(tmp(nloc1, nloc2))
-        call MPI_Recv(tmp, nloc1*nloc2, MPI_REAL_PW, sender, tag_vx, P%plane_comm, MPI_STATUS_IGNORE, ierr)
-        call place_patch(P%fixed_dir, P%vx, tmp, meta(1), meta(2), meta(3), meta(4))
+        call MPI_Recv(P%recv_work, nloc1*nloc2, MPI_REAL_PW, sender, tag_vx, P%plane_comm, MPI_STATUS_IGNORE, ierr)
+        call place_flat_patch(P%vx, P%recv_work, meta(1), meta(2), meta(3), meta(4))
 
-        call MPI_Recv(tmp, nloc1*nloc2, MPI_REAL_PW, sender, tag_vy, P%plane_comm, MPI_STATUS_IGNORE, ierr)
-        call place_patch(P%fixed_dir, P%vy, tmp, meta(1), meta(2), meta(3), meta(4))
+        call MPI_Recv(P%recv_work, nloc1*nloc2, MPI_REAL_PW, sender, tag_vy, P%plane_comm, MPI_STATUS_IGNORE, ierr)
+        call place_flat_patch(P%vy, P%recv_work, meta(1), meta(2), meta(3), meta(4))
 
-        call MPI_Recv(tmp, nloc1*nloc2, MPI_REAL_PW, sender, tag_vz, P%plane_comm, MPI_STATUS_IGNORE, ierr)
-        call place_patch(P%fixed_dir, P%vz, tmp, meta(1), meta(2), meta(3), meta(4))
-
-        deallocate(tmp)
+        call MPI_Recv(P%recv_work, nloc1*nloc2, MPI_REAL_PW, sender, tag_vz, P%plane_comm, MPI_STATUS_IGNORE, ierr)
+        call place_flat_patch(P%vz, P%recv_work, meta(1), meta(2), meta(3), meta(4))
       end do
 
       write(P%file_unit) t
@@ -324,13 +331,11 @@ contains
 
       meta = [m1, p1, m2, p2]
       call MPI_Send(meta, 4, MPI_INTEGER, 0, tag_meta, P%plane_comm, ierr)
-      call MPI_Send(vx_loc, size(vx_loc), MPI_REAL_PW, 0, tag_vx, P%plane_comm, ierr)
-      call MPI_Send(vy_loc, size(vy_loc), MPI_REAL_PW, 0, tag_vy, P%plane_comm, ierr)
-      call MPI_Send(vz_loc, size(vz_loc), MPI_REAL_PW, 0, tag_vz, P%plane_comm, ierr)
+      call MPI_Send(P%vx_local, size(P%vx_local), MPI_REAL_PW, 0, tag_vx, P%plane_comm, ierr)
+      call MPI_Send(P%vy_local, size(P%vy_local), MPI_REAL_PW, 0, tag_vy, P%plane_comm, ierr)
+      call MPI_Send(P%vz_local, size(P%vz_local), MPI_REAL_PW, 0, tag_vz, P%plane_comm, ierr)
 
     end if
-
-    deallocate(vx_loc, vy_loc, vz_loc)
 
   end subroutine write_one_plane
 
@@ -359,6 +364,10 @@ contains
       if (allocated(planes%P(p)%vx)) deallocate(planes%P(p)%vx)
       if (allocated(planes%P(p)%vy)) deallocate(planes%P(p)%vy)
       if (allocated(planes%P(p)%vz)) deallocate(planes%P(p)%vz)
+      if (allocated(planes%P(p)%vx_local)) deallocate(planes%P(p)%vx_local)
+      if (allocated(planes%P(p)%vy_local)) deallocate(planes%P(p)%vy_local)
+      if (allocated(planes%P(p)%vz_local)) deallocate(planes%P(p)%vz_local)
+      if (allocated(planes%P(p)%recv_work)) deallocate(planes%P(p)%recv_work)
 
     end do
 
@@ -656,5 +665,20 @@ contains
     global(m1:p1, m2:p2) = patch
 
   end subroutine place_patch
+
+
+  subroutine place_flat_patch(global, patch, m1, p1, m2, p2)
+    real(kind=wp), intent(inout) :: global(:,:)
+    real(kind=wp), intent(in) :: patch(:)
+    integer, intent(in) :: m1, p1, m2, p2
+    integer :: a, b, nloc1
+
+    nloc1 = p1 - m1 + 1
+    do b = m2, p2
+      do a = m1, p1
+        global(a,b) = patch((a-m1+1) + (b-m2)*nloc1)
+      end do
+    end do
+  end subroutine place_flat_patch
 
 end module plane_output
