@@ -1,5 +1,6 @@
 execute_process(
   COMMAND "${CMAKE_COMMAND}" -E env WQL3D_PHASE3_MEMORY_RECONCILE=1
+          WQL3D_PHASE3_EXERCISE_HOST_UPDATE=1
           "${MPIEXEC}" -np 1 "${EXE}" "${INPUT}"
   RESULT_VARIABLE result
   OUTPUT_VARIABLE output
@@ -11,6 +12,7 @@ endif()
 foreach(required
     "Persistent OpenACC device data:"
     "presence decision:          PASS"
+    "explicit host update:       PASS"
     "cleanup decision:           PASS")
   string(FIND "${output}" "${required}" location)
   if(location EQUAL -1)

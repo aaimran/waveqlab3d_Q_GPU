@@ -34,6 +34,7 @@ program main
                                   end_timestep_allocation_tracking
   use device_data, only : enter_domain_device_data, &
                           assert_domain_device_data_present, &
+                          update_domain_host_data, &
                           exit_domain_device_data
   implicit none
 
@@ -59,7 +60,7 @@ program main
   character(len=256) :: ifname !< Input filename
   character(len=32) :: preflight_env
   integer :: infile, len_ifname, stat
-  logical :: preflight_only
+  logical :: preflight_only, exercise_host_update
   real(kind = wp) :: t1, t2     ! timing information
   real(kind = wp) :: step_s, progress_pct
 
@@ -101,6 +102,13 @@ program main
   call init_domain(D, infile, ifname, resolved_config) ! domain
   call enter_domain_device_data(D)
   call assert_domain_device_data_present(D)
+  preflight_env = ''
+  call get_environment_variable('WQL3D_PHASE3_EXERCISE_HOST_UPDATE', &
+       preflight_env, status=stat)
+  exercise_host_update = stat == 0 .and. &
+       any(trim(adjustl(preflight_env)) == [character(len=5) :: &
+       '1', 'true', 'TRUE', 'yes', 'YES'])
+  if (exercise_host_update) call update_domain_host_data(D)
   call begin_timestep_allocation_tracking()
 
   !call create_dataset("seismogram1", 0, [0])

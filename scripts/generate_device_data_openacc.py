@@ -169,7 +169,7 @@ contains
 
   subroutine update_domain_host_data(D)
     type(domain_type), intent(inout) :: D
-    integer :: i, j, leaf_count
+    integer :: i, j, leaf_count, ierr, rank
     integer(int64) :: payload_bytes
     if (.not.data_active) call device_data_error('RUN-DEVICE-DATA-012', &
          'Host update requested outside the persistent device-data lifetime.')
@@ -188,6 +188,10 @@ contains
     do i = 1, D%nifaces
        call update_host_iface_type(D%I(i), leaf_count, payload_bytes)
     end do
+    call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
+    if (rank == 0) write(*,'(A,I0,A,F12.3,A)') &
+         '  explicit host update:       PASS, leaves=', leaf_count, &
+         ', payload=', real(payload_bytes,8)/1048576.0_8, ' MiB'
   end subroutine update_domain_host_data
 
   subroutine exit_domain_device_data(D)
