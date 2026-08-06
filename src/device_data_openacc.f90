@@ -13,7 +13,7 @@ module device_data
   integer(int64), save :: free_bytes_before = -1_int64
 
   public :: enter_domain_device_data, assert_domain_device_data_present, &
-       exit_domain_device_data
+       update_domain_host_data, exit_domain_device_data
 
   interface map_leaf
      module procedure map_real_1, map_real_2, map_real_3, map_real_4
@@ -27,6 +27,10 @@ module device_data
      module procedure unmap_real_1, unmap_real_2, unmap_real_3, unmap_real_4
      module procedure unmap_integer_1, unmap_character_1
   end interface unmap_leaf
+  interface update_host_leaf
+     module procedure update_host_real_1, update_host_real_2, update_host_real_3, update_host_real_4
+     module procedure update_host_integer_1, update_host_character_1
+  end interface update_host_leaf
 
 contains
 
@@ -60,6 +64,11 @@ contains
     free_after = acc_get_property(acc_get_device_num(acc_device_nvidia), &
          acc_device_nvidia, acc_property_free_memory)
     measured_bytes = max(0_int64, free_bytes_before - free_after)
+    if (environment_true('WQL3D_PHASE3_MEMORY_RECONCILE')) then
+       if (measured_bytes < payload_bytes .or. measured_bytes > payload_bytes + &
+           max(67108864_int64, payload_bytes/20_int64)) call device_data_error( &
+           'RUN-DEVICE-DATA-011', 'Measured device allocation disagrees with payload plus allowed overhead.')
+    end if
     data_active = .true.
     active_leaf_count = leaf_count
     active_payload_bytes = payload_bytes
@@ -104,6 +113,29 @@ contains
          call device_data_error('RUN-DEVICE-DATA-003', &
          'Allocated leaf ownership changed during the persistent lifetime.')
   end subroutine assert_domain_device_data_present
+
+  subroutine update_domain_host_data(D)
+    type(domain_type), intent(inout) :: D
+    integer :: i, j, leaf_count
+    integer(int64) :: payload_bytes
+    if (.not.data_active) call device_data_error('RUN-DEVICE-DATA-012', &
+         'Host update requested outside the persistent device-data lifetime.')
+    leaf_count = 0
+    payload_bytes = 0_int64
+    do i = 1, D%nblocks
+       call update_host_block_material(D%B(i)%M, leaf_count, payload_bytes)
+       call update_host_block_plastic(D%B(i)%P, leaf_count, payload_bytes)
+       call update_host_block_fields(D%B(i)%F, leaf_count, payload_bytes)
+       do j = 1, 6
+          call update_host_block_boundary(D%B(i)%B(j), leaf_count, payload_bytes)
+          call update_host_block_pml(D%B(i)%PMLB(j), leaf_count, payload_bytes)
+       end do
+       call update_host_block_type(D%B(i), leaf_count, payload_bytes)
+    end do
+    do i = 1, D%nifaces
+       call update_host_iface_type(D%I(i), leaf_count, payload_bytes)
+    end do
+  end subroutine update_domain_host_data
 
   subroutine exit_domain_device_data(D)
     type(domain_type), intent(inout) :: D
@@ -169,6 +201,16 @@ contains
     end if
     call MPI_Abort(MPI_COMM_WORLD, 96, ierr)
   end subroutine device_data_error
+
+  logical function environment_true(name)
+    character(*), intent(in) :: name
+    character(16) :: value
+    integer :: status
+    value = ''
+    call get_environment_variable(name, value, status=status)
+    environment_true = status == 0 .and. any(trim(adjustl(value)) == &
+         [character(len=5) :: '1', 'true', 'TRUE', 'yes', 'YES'])
+  end function environment_true
 
   subroutine enter_block_grid_t(value, leaf_count, payload_bytes)
     type(block_grid_t), intent(inout) :: value
@@ -518,6 +560,96 @@ contains
     call unmap_leaf(value%M, leaf_count, payload_bytes)
   end subroutine exit_block_material
 
+  subroutine update_host_block_material(value, leaf_count, payload_bytes)
+    type(block_material), intent(inout) :: value
+    integer, intent(inout) :: leaf_count
+    integer(int64), intent(inout) :: payload_bytes
+    call update_host_leaf(value%eta4, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta5, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta6, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta7, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta8, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta9, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta4, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta5, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta6, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta7, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta8, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta9, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta4Q, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta5Q, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta6Q, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta7Q, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta8Q, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta9Q, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta4Q, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta5Q, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta6Q, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta7Q, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta8Q, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta9Q, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta4Q8, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta5Q8, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta6Q8, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta7Q8, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta8Q8, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta9Q8, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta4Q8, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta5Q8, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta6Q8, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta7Q8, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta8Q8, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta9Q8, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta4Qf, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta5Qf, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta6Qf, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta7Qf, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta8Qf, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta9Qf, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta4Qf, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta5Qf, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta6Qf, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta7Qf, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta8Qf, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta9Qf, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta4_4M, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta5_4M, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta6_4M, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta7_4M, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta8_4M, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta9_4M, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta4_4M, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta5_4M, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta6_4M, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta7_4M, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta8_4M, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta9_4M, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta4_8M, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta5_8M, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta6_8M, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta7_8M, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta8_8M, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta9_8M, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta4_8M, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta5_8M, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta6_8M, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta7_8M, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta8_8M, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta9_8M, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta4Qf8, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta5Qf8, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta6Qf8, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta7Qf8, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta8Qf8, leaf_count, payload_bytes)
+    call update_host_leaf(value%eta9Qf8, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta4Qf8, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta5Qf8, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta6Qf8, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta7Qf8, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta8Qf8, leaf_count, payload_bytes)
+    call update_host_leaf(value%Deta9Qf8, leaf_count, payload_bytes)
+  end subroutine update_host_block_material
+
   subroutine enter_block_plastic(value, leaf_count, payload_bytes)
     type(block_plastic), intent(inout) :: value
     integer, intent(inout) :: leaf_count
@@ -538,6 +670,13 @@ contains
     integer(int64), intent(inout) :: payload_bytes
     call unmap_leaf(value%P, leaf_count, payload_bytes)
   end subroutine exit_block_plastic
+
+  subroutine update_host_block_plastic(value, leaf_count, payload_bytes)
+    type(block_plastic), intent(inout) :: value
+    integer, intent(inout) :: leaf_count
+    integer(int64), intent(inout) :: payload_bytes
+    call update_host_leaf(value%P, leaf_count, payload_bytes)
+  end subroutine update_host_block_plastic
 
   subroutine enter_block_fields(value, leaf_count, payload_bytes)
     type(block_fields), intent(inout) :: value
@@ -562,6 +701,14 @@ contains
     call unmap_leaf(value%DF, leaf_count, payload_bytes)
     call unmap_leaf(value%F, leaf_count, payload_bytes)
   end subroutine exit_block_fields
+
+  subroutine update_host_block_fields(value, leaf_count, payload_bytes)
+    type(block_fields), intent(inout) :: value
+    integer, intent(inout) :: leaf_count
+    integer(int64), intent(inout) :: payload_bytes
+    call update_host_leaf(value%F, leaf_count, payload_bytes)
+    call update_host_leaf(value%DF, leaf_count, payload_bytes)
+  end subroutine update_host_block_fields
 
   subroutine enter_block_boundary(value, leaf_count, payload_bytes)
     type(block_boundary), intent(inout) :: value
@@ -613,6 +760,23 @@ contains
     call unmap_leaf(value%M, leaf_count, payload_bytes)
     call unmap_leaf(value%X, leaf_count, payload_bytes)
   end subroutine exit_block_boundary
+
+  subroutine update_host_block_boundary(value, leaf_count, payload_bytes)
+    type(block_boundary), intent(inout) :: value
+    integer, intent(inout) :: leaf_count
+    integer(int64), intent(inout) :: payload_bytes
+    call update_host_leaf(value%X, leaf_count, payload_bytes)
+    call update_host_leaf(value%M, leaf_count, payload_bytes)
+    call update_host_leaf(value%n_l, leaf_count, payload_bytes)
+    call update_host_leaf(value%n_m, leaf_count, payload_bytes)
+    call update_host_leaf(value%n_n, leaf_count, payload_bytes)
+    call update_host_leaf(value%F, leaf_count, payload_bytes)
+    call update_host_leaf(value%DF, leaf_count, payload_bytes)
+    call update_host_leaf(value%Fopp, leaf_count, payload_bytes)
+    call update_host_leaf(value%Mopp, leaf_count, payload_bytes)
+    call update_host_leaf(value%U, leaf_count, payload_bytes)
+    call update_host_leaf(value%DU, leaf_count, payload_bytes)
+  end subroutine update_host_block_boundary
 
   subroutine enter_moment_tensor(value, leaf_count, payload_bytes)
     type(moment_tensor), intent(inout) :: value
@@ -716,6 +880,14 @@ contains
     call unmap_leaf(value%Q, leaf_count, payload_bytes)
   end subroutine exit_block_pml
 
+  subroutine update_host_block_pml(value, leaf_count, payload_bytes)
+    type(block_pml), intent(inout) :: value
+    integer, intent(inout) :: leaf_count
+    integer(int64), intent(inout) :: payload_bytes
+    call update_host_leaf(value%Q, leaf_count, payload_bytes)
+    call update_host_leaf(value%DQ, leaf_count, payload_bytes)
+  end subroutine update_host_block_pml
+
   subroutine enter_block_type(value, leaf_count, payload_bytes)
     type(block_type), intent(inout) :: value
     integer, intent(inout) :: leaf_count
@@ -742,6 +914,15 @@ contains
     call unmap_leaf(value%work_boundary_r, leaf_count, payload_bytes)
     call unmap_leaf(value%work_boundary_q, leaf_count, payload_bytes)
   end subroutine exit_block_type
+
+  subroutine update_host_block_type(value, leaf_count, payload_bytes)
+    type(block_type), intent(inout) :: value
+    integer, intent(inout) :: leaf_count
+    integer(int64), intent(inout) :: payload_bytes
+    call update_host_leaf(value%work_boundary_q, leaf_count, payload_bytes)
+    call update_host_leaf(value%work_boundary_r, leaf_count, payload_bytes)
+    call update_host_leaf(value%work_boundary_s, leaf_count, payload_bytes)
+  end subroutine update_host_block_type
 
   subroutine enter_iface_type(value, leaf_count, payload_bytes)
     type(iface_type), intent(inout) :: value
@@ -805,6 +986,27 @@ contains
     call unmap_leaf(value%DV, leaf_count, payload_bytes)
     call unmap_leaf(value%V, leaf_count, payload_bytes)
   end subroutine exit_iface_type
+
+  subroutine update_host_iface_type(value, leaf_count, payload_bytes)
+    type(iface_type), intent(inout) :: value
+    integer, intent(inout) :: leaf_count
+    integer(int64), intent(inout) :: payload_bytes
+    call update_host_leaf(value%V, leaf_count, payload_bytes)
+    call update_host_leaf(value%DV, leaf_count, payload_bytes)
+    call update_host_leaf(value%T, leaf_count, payload_bytes)
+    call update_host_leaf(value%S, leaf_count, payload_bytes)
+    call update_host_leaf(value%DS, leaf_count, payload_bytes)
+    call update_host_leaf(value%W, leaf_count, payload_bytes)
+    call update_host_leaf(value%DW, leaf_count, payload_bytes)
+    call update_host_leaf(value%Svel, leaf_count, payload_bytes)
+    call update_host_leaf(value%trup, leaf_count, payload_bytes)
+    call update_host_leaf(value%work_F, leaf_count, payload_bytes)
+    call update_host_leaf(value%work_G, leaf_count, payload_bytes)
+    call update_host_leaf(value%work_u_rotated, leaf_count, payload_bytes)
+    call update_host_leaf(value%work_v_rotated, leaf_count, payload_bytes)
+    call update_host_leaf(value%work_u_hat, leaf_count, payload_bytes)
+    call update_host_leaf(value%work_v_hat, leaf_count, payload_bytes)
+  end subroutine update_host_iface_type
 
 
   subroutine account_leaf(element_count, bits, leaf_count, payload_bytes)
@@ -1004,6 +1206,72 @@ contains
     if (.not.acc_is_present(value, int(size(value),8)*int(storage_size(value)/8,8))) call device_data_error('RUN-DEVICE-DATA-009','Mapped leaf is unexpectedly absent.')
     call acc_delete_finalize(value, int(size(value),8)*int(storage_size(value)/8,8))
     if (acc_is_present(value, int(size(value),8)*int(storage_size(value)/8,8))) call device_data_error('RUN-DEVICE-DATA-010','Leaf remains present after delete.')
+    call account_leaf(size(value), storage_size(value), leaf_count, payload_bytes)
+  end subroutine
+
+  subroutine update_host_real_1(value, leaf_count, payload_bytes)
+    real(kind=wp), allocatable, intent(inout) :: value(:)
+    integer, intent(inout) :: leaf_count
+    integer(int64), intent(inout) :: payload_bytes
+    if (.not.allocated(value)) return
+    if (size(value) == 0) return
+    if (.not.acc_is_present(value, int(size(value),8)*int(storage_size(0.0_wp)/8,8))) call device_data_error('RUN-DEVICE-DATA-009','Mapped leaf is unexpectedly absent.')
+    call acc_update_self(value, int(size(value),8)*int(storage_size(0.0_wp)/8,8))
+    call account_leaf(size(value), storage_size(0.0_wp), leaf_count, payload_bytes)
+  end subroutine
+
+  subroutine update_host_real_2(value, leaf_count, payload_bytes)
+    real(kind=wp), allocatable, intent(inout) :: value(:,:)
+    integer, intent(inout) :: leaf_count
+    integer(int64), intent(inout) :: payload_bytes
+    if (.not.allocated(value)) return
+    if (size(value) == 0) return
+    if (.not.acc_is_present(value, int(size(value),8)*int(storage_size(0.0_wp)/8,8))) call device_data_error('RUN-DEVICE-DATA-009','Mapped leaf is unexpectedly absent.')
+    call acc_update_self(value, int(size(value),8)*int(storage_size(0.0_wp)/8,8))
+    call account_leaf(size(value), storage_size(0.0_wp), leaf_count, payload_bytes)
+  end subroutine
+
+  subroutine update_host_real_3(value, leaf_count, payload_bytes)
+    real(kind=wp), allocatable, intent(inout) :: value(:,:,:)
+    integer, intent(inout) :: leaf_count
+    integer(int64), intent(inout) :: payload_bytes
+    if (.not.allocated(value)) return
+    if (size(value) == 0) return
+    if (.not.acc_is_present(value, int(size(value),8)*int(storage_size(0.0_wp)/8,8))) call device_data_error('RUN-DEVICE-DATA-009','Mapped leaf is unexpectedly absent.')
+    call acc_update_self(value, int(size(value),8)*int(storage_size(0.0_wp)/8,8))
+    call account_leaf(size(value), storage_size(0.0_wp), leaf_count, payload_bytes)
+  end subroutine
+
+  subroutine update_host_real_4(value, leaf_count, payload_bytes)
+    real(kind=wp), allocatable, intent(inout) :: value(:,:,:,:)
+    integer, intent(inout) :: leaf_count
+    integer(int64), intent(inout) :: payload_bytes
+    if (.not.allocated(value)) return
+    if (size(value) == 0) return
+    if (.not.acc_is_present(value, int(size(value),8)*int(storage_size(0.0_wp)/8,8))) call device_data_error('RUN-DEVICE-DATA-009','Mapped leaf is unexpectedly absent.')
+    call acc_update_self(value, int(size(value),8)*int(storage_size(0.0_wp)/8,8))
+    call account_leaf(size(value), storage_size(0.0_wp), leaf_count, payload_bytes)
+  end subroutine
+
+  subroutine update_host_integer_1(value, leaf_count, payload_bytes)
+    integer, allocatable, intent(inout) :: value(:)
+    integer, intent(inout) :: leaf_count
+    integer(int64), intent(inout) :: payload_bytes
+    if (.not.allocated(value)) return
+    if (size(value) == 0) return
+    if (.not.acc_is_present(value, int(size(value),8)*int(storage_size(0)/8,8))) call device_data_error('RUN-DEVICE-DATA-009','Mapped leaf is unexpectedly absent.')
+    call acc_update_self(value, int(size(value),8)*int(storage_size(0)/8,8))
+    call account_leaf(size(value), storage_size(0), leaf_count, payload_bytes)
+  end subroutine
+
+  subroutine update_host_character_1(value, leaf_count, payload_bytes)
+    character(len=64), allocatable, intent(inout) :: value(:)
+    integer, intent(inout) :: leaf_count
+    integer(int64), intent(inout) :: payload_bytes
+    if (.not.allocated(value)) return
+    if (size(value) == 0) return
+    if (.not.acc_is_present(value, int(size(value),8)*int(storage_size(value)/8,8))) call device_data_error('RUN-DEVICE-DATA-009','Mapped leaf is unexpectedly absent.')
+    call acc_update_self(value, int(size(value),8)*int(storage_size(value)/8,8))
     call account_leaf(size(value), storage_size(value), leaf_count, payload_bytes)
   end subroutine
 

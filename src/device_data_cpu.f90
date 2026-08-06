@@ -3,7 +3,7 @@ module device_data
   implicit none
   private
   public :: enter_domain_device_data, assert_domain_device_data_present, &
-       exit_domain_device_data
+       update_domain_host_data, exit_domain_device_data
 contains
   subroutine enter_domain_device_data(D)
     type(domain_type), intent(inout) :: D
@@ -19,4 +19,9 @@ contains
     type(domain_type), intent(inout) :: D
     if (D%nblocks < 0) error stop 'invalid domain block count'
   end subroutine exit_domain_device_data
+
+  subroutine update_domain_host_data(D)
+    type(domain_type), intent(inout) :: D
+    if (D%nblocks < 0) error stop 'invalid domain block count'
+  end subroutine update_domain_host_data
 end module device_data

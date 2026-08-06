@@ -26,14 +26,14 @@ def load_inventory():
 
 
 def owner_routine(owner: str, components: list[str], action: str) -> list[str]:
-    verb = {"enter": "map", "check": "check", "exit": "unmap"}[action]
+    verb = {"enter": "map", "check": "check", "exit": "unmap", "update_host": "update_host"}[action]
     lines = [
         f"  subroutine {action}_{owner}(value, leaf_count, payload_bytes)",
         f"    type({owner}), intent(inout) :: value",
         "    integer, intent(inout) :: leaf_count",
         "    integer(int64), intent(inout) :: payload_bytes",
     ]
-    items = components if action == "enter" else list(reversed(components))
+    items = components if action in {"enter", "update_host"} else list(reversed(components))
     for name in items:
         lines.append(f"    call {verb}_leaf(value%{name}, leaf_count, payload_bytes)")
     lines.extend([f"  end subroutine {action}_{owner}", ""])
@@ -70,7 +70,7 @@ module device_data
   integer(int64), save :: free_bytes_before = -1_int64
 
   public :: enter_domain_device_data, assert_domain_device_data_present, &
-       exit_domain_device_data
+       update_domain_host_data, exit_domain_device_data
 
   interface map_leaf
      module procedure map_real_1, map_real_2, map_real_3, map_real_4
@@ -80,6 +80,10 @@ module device_data
      module procedure unmap_real_1, unmap_real_2, unmap_real_3, unmap_real_4
      module procedure unmap_integer_1, unmap_character_1
   end interface unmap_leaf
+  interface update_host_leaf
+     module procedure update_host_real_1, update_host_real_2, update_host_real_3, update_host_real_4
+     module procedure update_host_integer_1, update_host_character_1
+  end interface update_host_leaf
 
 contains
 
@@ -113,6 +117,11 @@ contains
     free_after = acc_get_property(acc_get_device_num(acc_device_nvidia), &
          acc_device_nvidia, acc_property_free_memory)
     measured_bytes = max(0_int64, free_bytes_before - free_after)
+    if (environment_true('WQL3D_PHASE3_MEMORY_RECONCILE')) then
+       if (measured_bytes < payload_bytes .or. measured_bytes > payload_bytes + &
+           max(67108864_int64, payload_bytes/20_int64)) call device_data_error( &
+           'RUN-DEVICE-DATA-011', 'Measured device allocation disagrees with payload plus allowed overhead.')
+    end if
     data_active = .true.
     active_leaf_count = leaf_count
     active_payload_bytes = payload_bytes
@@ -157,6 +166,29 @@ contains
          call device_data_error('RUN-DEVICE-DATA-003', &
          'Allocated leaf ownership changed during the persistent lifetime.')
   end subroutine assert_domain_device_data_present
+
+  subroutine update_domain_host_data(D)
+    type(domain_type), intent(inout) :: D
+    integer :: i, j, leaf_count
+    integer(int64) :: payload_bytes
+    if (.not.data_active) call device_data_error('RUN-DEVICE-DATA-012', &
+         'Host update requested outside the persistent device-data lifetime.')
+    leaf_count = 0
+    payload_bytes = 0_int64
+    do i = 1, D%nblocks
+       call update_host_block_material(D%B(i)%M, leaf_count, payload_bytes)
+       call update_host_block_plastic(D%B(i)%P, leaf_count, payload_bytes)
+       call update_host_block_fields(D%B(i)%F, leaf_count, payload_bytes)
+       do j = 1, 6
+          call update_host_block_boundary(D%B(i)%B(j), leaf_count, payload_bytes)
+          call update_host_block_pml(D%B(i)%PMLB(j), leaf_count, payload_bytes)
+       end do
+       call update_host_block_type(D%B(i), leaf_count, payload_bytes)
+    end do
+    do i = 1, D%nifaces
+       call update_host_iface_type(D%I(i), leaf_count, payload_bytes)
+    end do
+  end subroutine update_domain_host_data
 
   subroutine exit_domain_device_data(D)
     type(domain_type), intent(inout) :: D
@@ -223,12 +255,25 @@ contains
     call MPI_Abort(MPI_COMM_WORLD, 96, ierr)
   end subroutine device_data_error
 
+  logical function environment_true(name)
+    character(*), intent(in) :: name
+    character(16) :: value
+    integer :: status
+    value = ''
+    call get_environment_variable(name, value, status=status)
+    environment_true = status == 0 .and. any(trim(adjustl(value)) == &
+         [character(len=5) :: '1', 'true', 'TRUE', 'yes', 'YES'])
+  end function environment_true
+
 """
     lines = text.splitlines()
     for owner in owners:
         lines += owner_routine(owner, grouped[owner], "enter")
         lines += owner_routine(owner, grouped[owner], "check")
         lines += owner_routine(owner, grouped[owner], "exit")
+        mutable = [row[1] for row in rows if row[0] == owner and row[6] == "create"]
+        if mutable:
+            lines += owner_routine(owner, mutable, "update_host")
 
     helpers = """
   subroutine account_leaf(element_count, bits, leaf_count, payload_bytes)
@@ -302,7 +347,7 @@ contains
 """
     lines += helpers.splitlines()
     # check/unmap are mechanically identical by rank apart from the runtime call.
-    for prefix in ("check", "unmap"):
+    for prefix in ("check", "unmap", "update_host"):
         for typename, declaration, zero in (
             ("real_1", "real(kind=wp), allocatable, intent(inout) :: value(:)", "0.0_wp"),
             ("real_2", "real(kind=wp), allocatable, intent(inout) :: value(:,:)", "0.0_wp"),
@@ -323,6 +368,8 @@ contains
             ]
             if prefix == "unmap":
                 lines += [f"    call acc_delete_finalize(value, {byte_count})", f"    if (acc_is_present(value, {byte_count})) call device_data_error('RUN-DEVICE-DATA-010','Leaf remains present after delete.')"]
+            elif prefix == "update_host":
+                lines += [f"    call acc_update_self(value, {byte_count})"]
             lines += [f"    call account_leaf(size(value), storage_size({zero}), leaf_count, payload_bytes)", "  end subroutine", ""]
     lines += ["end module device_data", ""]
     # Add missing generic interfaces generated above.

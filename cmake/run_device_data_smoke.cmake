@@ -1,5 +1,6 @@
 execute_process(
-  COMMAND "${MPIEXEC}" -np 1 "${EXE}" "${INPUT}"
+  COMMAND "${CMAKE_COMMAND}" -E env WQL3D_PHASE3_MEMORY_RECONCILE=1
+          "${MPIEXEC}" -np 1 "${EXE}" "${INPUT}"
   RESULT_VARIABLE result
   OUTPUT_VARIABLE output
   ERROR_VARIABLE error)
