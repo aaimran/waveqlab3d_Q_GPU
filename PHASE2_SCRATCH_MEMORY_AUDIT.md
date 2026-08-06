@@ -193,3 +193,38 @@ across decompositions. Local GNU debug qualification passed on 2026-08-06:
 The combined fQ8/Q8/Q4 and three-family suite passed all six tests in 7.68 s.
 These fixtures establish decomposition consistency, not cross-family equality;
 the operators are expected to produce slightly different numerical fields.
+
+Punakha NVHPC qualification of the order-6 fixtures passed on 2026-08-06:
+
+| Configuration | traditional-6 | upwind-6 | upwind-DRP-6 | Total |
+|---|---:|---:|---:|---:|
+| `cpu-release` | pass, 5.59 s | pass, 5.50 s | pass, 6.03 s | 17.12 s |
+| `gpu-h100` | pass, 6.44 s | pass, 6.27 s | pass, 6.77 s | 19.48 s |
+
+All six Punakha checks passed. This closes the point-stencil qualification
+gate for the three target order-6 finite-difference families under GNU and
+NVHPC. The `gpu-h100` timings still represent host numerical execution because
+the kernels have not yet been decorated for OpenACC offload.
+
+## Locked two-block interface oracle
+
+`test_elastic_locked_interface_o6.in` provides the decomposition-compatible
+interface fixture missing from the historical 21-point tests. It uses two
+41-cubed Cartesian blocks, a traditional order-6 operator, a locked interface,
+and a moment source in block 1. The source propagates through the interface and
+must produce a nonzero field in both blocks.
+
+The regression compares serial shared ownership (`-np 1`) with distributed
+block ownership (`-np 2`) and requires identical formatted per-block global
+maxima. Local GNU debug qualification passed in 35.43 s:
+
+```text
+block 1 max field: 2.0699E+03
+block 2 max field: 1.6389E+03
+serial face workspace: 0.693 MiB block + 0.539 MiB interface
+```
+
+This exercises interface initialization, rotated and hat workspaces, locked
+coupling, wave transmission, MPI block ownership, and shutdown cleanup. The
+remaining qualification step is to repeat this oracle with NVHPC
+`cpu-release` and `gpu-h100` on Punakha.

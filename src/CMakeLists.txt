@@ -200,6 +200,13 @@ foreach(elastic_fd traditional upwind upwind_drp)
       -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/run_q8_dynamic_regression.cmake)
 endforeach()
 
+add_test(NAME elastic_locked_interface_o6_decomposition
+  COMMAND ${CMAKE_COMMAND}
+    -D MPIEXEC=${WQL3D_MPI_RUNNER}
+    -D EXE=$<TARGET_FILE:waveqlab3d>
+    -D INPUT=${CMAKE_CURRENT_SOURCE_DIR}/../inputfile/test_elastic_locked_interface_o6.in
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/run_elastic_locked_interface_regression.cmake)
+
 add_test(NAME q4_dynamic_pml_decomposition
   COMMAND ${CMAKE_COMMAND}
     -D MPIEXEC=${WQL3D_MPI_RUNNER}

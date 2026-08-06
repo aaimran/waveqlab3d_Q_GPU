@@ -152,6 +152,25 @@ debug suite passed all three fixtures plus fQ8/Q8/Q4 (6/6, 7.68 s). Punakha
 NVHPC qualification of the new fixtures and a decomposition-compatible locked
 interface oracle remain open.
 
+Punakha NVHPC order-6 fixture qualification passed on 2026-08-06:
+
+```text
+cpu-release: traditional 5.59 s; upwind 5.50 s; upwind-DRP 6.03 s; 3/3 pass
+gpu-h100:    traditional 6.44 s; upwind 6.27 s; upwind-DRP 6.77 s; 3/3 pass
+```
+
+The three-family point-stencil gate is closed for GNU and NVHPC builds. Since
+numerical kernels are not offloaded yet, the H100 preset remains a compiler and
+accelerator-runtime qualification. The remaining Phase 2 numerical gate is a
+decomposition-compatible locked two-block interface oracle.
+
+The locked interface oracle is now implemented with two 41-cubed blocks and a
+nonzero source transmitted from block 1 into block 2. Serial shared ownership
+and two-rank distributed ownership produced identical block maxima; the local
+GNU debug test passed in 35.43 s. Phase 2 implementation is complete locally.
+NVHPC CPU/H100 qualification of this final oracle remains before Phase 2 can
+be closed and Phase 3 numerical OpenACC offload can begin.
+
 The IEEE signaling warnings printed after preflight occur during the
 intentional Fortran `STOP` after `MPI_Finalize`; no timestep was executed.
 

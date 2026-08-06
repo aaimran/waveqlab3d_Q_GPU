@@ -473,15 +473,18 @@ contains
 
     type(domain_type),intent(inout) :: D
     real(wp) :: local_eta, global_eta, local_field, global_field
+    real(wp) :: local_block_field(2), global_block_field(2)
     integer :: i, ierr
     logical :: local_finite, global_finite
 
     local_eta = 0.0_wp
     local_field = 0.0_wp
+    local_block_field = 0.0_wp
     local_finite = .true.
     do i = 1, D%nblocks
        if (.not.allocated(D%B(i)%F%F)) cycle
-       local_field = max(local_field, maxval(abs(D%B(i)%F%F)))
+       local_block_field(i) = maxval(abs(D%B(i)%F%F))
+       local_field = max(local_field, local_block_field(i))
        if (trim(D%response) == 'anelastic-Q4' .or. trim(D%response) == 'anelastic-Q8' .or. &
            trim(D%response) == 'anelastic-fQ8') then
           if (trim(D%response) == 'anelastic-Q4' .and. allocated(D%B(i)%M%eta4Q)) then
@@ -507,6 +510,8 @@ contains
     call MPI_Allreduce(local_eta, global_eta, 1, MPI_DOUBLE_PRECISION, MPI_MAX, &
          MPI_COMM_WORLD, ierr)
     call MPI_Allreduce(local_field, global_field, 1, MPI_DOUBLE_PRECISION, MPI_MAX, &
+         MPI_COMM_WORLD, ierr)
+    call MPI_Allreduce(local_block_field, global_block_field, 2, MPI_DOUBLE_PRECISION, MPI_MAX, &
          MPI_COMM_WORLD, ierr)
     call MPI_Allreduce(local_finite, global_finite, 1, MPI_LOGICAL, MPI_LAND, &
          MPI_COMM_WORLD, ierr)
@@ -536,6 +541,9 @@ contains
     end if
     if (rank == 0 .and. trim(D%response) == 'elastic') &
          write(*,'(A,ES12.4)') 'Elastic final state: max|field|=', global_field
+    if (rank == 0 .and. trim(D%response) == 'elastic' .and. D%nblocks == 2) &
+         write(*,'(A,ES12.4,A,ES12.4)') 'Elastic block maxima: block1=', &
+         global_block_field(1), ', block2=', global_block_field(2)
 
     if ( D%w_fault .eqv.  .true.) then
        if (in_fault_comm(1)) call destroy_fault(D%fault)
