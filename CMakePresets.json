@@ -28,7 +28,8 @@
       "binaryDir": "${sourceDir}/build/gpu-h100",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_Fortran_COMPILER": "nvfortran",
+        "CMAKE_Fortran_COMPILER": "$env{NVHPC_SDK_ROOT}/compilers/bin/nvfortran",
+        "MPI_Fortran_COMPILER": "$env{NVHPC_SDK_ROOT}/comm_libs/mpi/bin/mpifort",
         "WQL3D_ENABLE_OPENACC": "ON",
         "WQL3D_ENABLE_CUDA_AWARE_MPI": "OFF",
         "WQL3D_GPU_ARCH": "cc90"
