@@ -65,6 +65,12 @@ evaluation. Q4 and Q8 both completed all timesteps and printed correct final
 state diagnostics before NVHPC faulted during normal shutdown. The corrected
 code resolves the optional argument before entering the compound condition.
 
+Post-fix Punakha runs confirmed successful one-rank Q4 and Q8 completion. The
+remaining two-rank test attempts were rejected before launch because the
+interactive allocation advertised one MPI slot. The regression harness now
+offers explicit test-only oversubscription through
+`WQL3D_TEST_MPI_OVERSUBSCRIBE=1`; production launch behavior is unchanged.
+
 The IEEE signaling warnings printed after preflight occur during the
 intentional Fortran `STOP` after `MPI_Finalize`; no timestep was executed.
 

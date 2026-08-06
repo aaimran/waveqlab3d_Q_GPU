@@ -50,3 +50,7 @@ under `/work/$USER`.
 The installation actually verified on Punakha, including the home-quota
 workaround and H100 OpenACC device test, is recorded in
 [punakha_nvdia_install.md](punakha_nvdia_install.md).
+
+The NVHPC shutdown segmentation fault found during Q4/Q8 qualification and
+its standards-compliant optional-argument fix are documented in
+[NVHPC_shutdown_regression_fix.md](NVHPC_shutdown_regression_fix.md).

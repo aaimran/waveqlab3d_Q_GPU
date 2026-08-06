@@ -2,8 +2,16 @@ if(NOT DEFINED STATE_LABEL)
   set(STATE_LABEL Q8)
 endif()
 
+# Tiny decomposition regressions may run inside an interactive allocation that
+# exposes only one scheduler slot. Allow an explicit test-only override without
+# changing production MPI launch behavior.
+set(mpi_test_args)
+if("$ENV{WQL3D_TEST_MPI_OVERSUBSCRIBE}" MATCHES "^(1|true|TRUE|yes|YES)$")
+  list(APPEND mpi_test_args --map-by :OVERSUBSCRIBE)
+endif()
+
 execute_process(
-  COMMAND "${MPIEXEC}" -np 1 "${EXE}" "${INPUT}"
+  COMMAND "${MPIEXEC}" ${mpi_test_args} -np 1 "${EXE}" "${INPUT}"
   RESULT_VARIABLE result1
   OUTPUT_VARIABLE output1
   ERROR_VARIABLE error1)
@@ -12,7 +20,7 @@ if(NOT result1 EQUAL 0)
 endif()
 
 execute_process(
-  COMMAND "${MPIEXEC}" -np 2 "${EXE}" "${INPUT}"
+  COMMAND "${MPIEXEC}" ${mpi_test_args} -np 2 "${EXE}" "${INPUT}"
   RESULT_VARIABLE result2
   OUTPUT_VARIABLE output2
   ERROR_VARIABLE error2)
