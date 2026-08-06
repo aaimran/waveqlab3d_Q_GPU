@@ -228,3 +228,20 @@ This exercises interface initialization, rotated and hat workspaces, locked
 coupling, wave transmission, MPI block ownership, and shutdown cleanup. The
 remaining qualification step is to repeat this oracle with NVHPC
 `cpu-release` and `gpu-h100` on Punakha.
+
+Punakha qualification completed on 2026-08-06:
+
+| Configuration | Locked-interface oracle |
+|---|---:|
+| `cpu-release` | pass, 40.40 s |
+| `gpu-h100` | pass, 41.32 s |
+
+Both NVHPC builds reproduced the required one-rank/two-rank locked-interface
+consistency. All Phase 2 numerical gates now pass with GNU and NVHPC:
+scratch-safety, persistent face ownership/accounting, the three order-6 FD
+families, and locked-interface decomposition consistency.
+
+Phase 2 is not yet closed. The roadmap still requires a complete persistent
+array inventory, total host/predicted-device memory reporting, an explicit
+headroom preflight, and steady-state allocation/thread-safety evidence.
+Numerical GPU offload remains intentionally outside Phase 2.

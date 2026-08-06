@@ -302,6 +302,8 @@ contains
       if (in_block_comm(i)) call init_seismogram(infile, D%seismometers(i), D%name, D%B(i)%G)
       if (in_block_comm(i)) call init_plane_output(infile, D%name, D%plane_outputs(i), D%B(i)%G, i)
     end do
+
+    call report_persistent_memory(D)
     
     !> above assumes that blocks contain fields defined on a structured mesh,
     !> which is a cube in the computational domain; the computational coordinates
@@ -363,6 +365,43 @@ contains
        write(*,'(A,F10.3,A)') '  aggregate ranks:   ', real(global_bytes, wp) / 1048576.0_wp, ' MiB'
     end if
   end subroutine report_workspace_memory
+
+
+  subroutine report_persistent_memory(D)
+    use persistent_memory, only : persistent_memory_bytes
+    use mpi3dbasic, only : rank
+    implicit none
+
+    type(domain_type), intent(in) :: D
+    integer(kind=8) :: local_category(7), global_category(7)
+    integer(kind=8) :: local_host, local_device, maximum_host, maximum_device
+    integer :: ierr, i
+    character(len=16), parameter :: labels(7) = [character(len=16) :: &
+         'grid/metric', 'material/Q', 'state/rate', 'PML', &
+         'boundary/work', 'interface/source', 'host output']
+
+    call persistent_memory_bytes(D, local_category)
+    local_host = sum(local_category)
+    local_device = sum(local_category(1:6))
+    call MPI_Reduce(local_category, global_category, 7, MPI_INTEGER8, MPI_SUM, 0, &
+         MPI_COMM_WORLD, ierr)
+    call MPI_Reduce(local_host, maximum_host, 1, MPI_INTEGER8, MPI_MAX, 0, &
+         MPI_COMM_WORLD, ierr)
+    call MPI_Reduce(local_device, maximum_device, 1, MPI_INTEGER8, MPI_MAX, 0, &
+         MPI_COMM_WORLD, ierr)
+
+    if (rank == 0) then
+       write(*,'(A)') 'Persistent allocation inventory:'
+       do i = 1, 7
+          write(*,'(A,A16,A,F12.3,A)') '  aggregate ', labels(i), ': ', &
+               real(global_category(i),wp)/1048576.0_wp, ' MiB'
+       end do
+       write(*,'(A,F12.3,A)') '  maximum host per rank:      ', &
+            real(maximum_host,wp)/1048576.0_wp, ' MiB'
+       write(*,'(A,F12.3,A)') '  predicted device per rank:  ', &
+            real(maximum_device,wp)/1048576.0_wp, ' MiB'
+    end if
+  end subroutine report_persistent_memory
 
 
   subroutine validate_initialized_geometry(D, II, serial_shared_blocks)

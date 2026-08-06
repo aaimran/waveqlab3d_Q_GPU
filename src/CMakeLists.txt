@@ -74,6 +74,7 @@ set(WQL3D_SRC
   diagnostics.f90
   decomposition_safety.f90
   datatypes.f90
+  persistent_memory.f90
   domain.f90
   metrics.f90
   elastic.f90

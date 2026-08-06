@@ -4,8 +4,8 @@ Last updated: 2026-08-06
 
 ## Current phase
 
-Phase 1 compiler/MPI baseline and H100 accelerator-runtime qualification are
-complete. Phase 2 scratch-safety work is active.
+Phases 0-1 are complete. Phase 2 numerical qualification is complete; memory
+inventory, capacity preflight, and allocation/thread-safety evidence remain.
 
 ## Implemented
 
@@ -167,9 +167,32 @@ decomposition-compatible locked two-block interface oracle.
 The locked interface oracle is now implemented with two 41-cubed blocks and a
 nonzero source transmitted from block 1 into block 2. Serial shared ownership
 and two-rank distributed ownership produced identical block maxima; the local
-GNU debug test passed in 35.43 s. Phase 2 implementation is complete locally.
-NVHPC CPU/H100 qualification of this final oracle remains before Phase 2 can
-be closed and Phase 3 numerical OpenACC offload can begin.
+GNU debug test passed in 35.43 s.
+
+Final Phase 2 Punakha qualification passed on 2026-08-06:
+
+```text
+cpu-release locked interface: pass, 40.40 s
+gpu-h100 locked interface:    pass, 41.32 s
+```
+
+All Phase 2 numerical gates are closed. Before Phase 3 begins, Phase 2 still
+requires a complete simulation-array ownership/byte inventory, predicted
+device-memory and headroom preflight, plus steady-state allocation and threaded
+CPU evidence. No numerical loop will be offloaded until these gates pass.
+
+The structural persistent-array inventory is now reproducible through
+`scripts/inventory_persistent_arrays.py`. It covers 174 allocatable components
+and records ownership, rank/shape, role, device policy, initialization,
+mutation, communication, and output use. Drift-check mode passes. Runtime byte
+totals, predicted device capacity, and headroom enforcement remain next.
+
+Exact runtime payload accounting is now implemented in
+`src/persistent_memory.f90`. It traverses allocated grid, material/attenuation,
+field/rate, PML, boundary/workspace, source/interface, and output leaves and
+reports aggregate MPI and maximum-per-rank totals. A one-block 41-cubed elastic
+case predicts 32.334 MiB per rank; Q8 predicts 109.961 MiB. Both decomposition
+regressions pass. Explicit GPU capacity reserve and rejection remain next.
 
 The IEEE signaling warnings printed after preflight occur during the
 intentional Fortran `STOP` after `MPI_Finalize`; no timestep was executed.
