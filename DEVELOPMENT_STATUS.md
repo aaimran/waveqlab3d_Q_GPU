@@ -4,8 +4,8 @@ Last updated: 2026-08-06
 
 ## Current phase
 
-Phases 0-1 are complete. Phase 2 numerical qualification is complete; memory
-inventory, capacity preflight, and allocation/thread-safety evidence remain.
+Phases 0-2 are complete and qualified with GNU and NVHPC. Phase 3 persistent
+device-data ownership is next; no numerical kernel is offloaded yet.
 
 ## Implemented
 
@@ -38,13 +38,15 @@ inventory, capacity preflight, and allocation/thread-safety evidence remain.
 
 ## Next gate
 
-1. Add accelerator runtime reporting without moving numerical arrays.
-2. Derive node-local rank with `MPI_Comm_split_type(MPI_COMM_TYPE_SHARED)`.
-3. Bind one local MPI rank to one visible GPU and reject oversubscription by
-   default.
-4. Report backend, global/local rank, device count, selected GPU, precision,
-   MPI implementation, and CUDA-aware MPI intent.
-5. Repeat the CPU/OpenACC Q4/Q8 regressions and a short elastic run.
+1. Add explicit OpenACC enter/exit ownership for every device-resident
+   allocatable leaf; do not deep-copy `domain_type`.
+2. Keep initialization and numerical kernels on the host for the first smoke
+   test.
+3. Add explicit host-update interfaces for diagnostics/output and reverse-order
+   device cleanup.
+4. Verify a no-kernel data-lifetime smoke test on H100, reconcile measured
+   device use with the 178-component inventory, and confirm no RK transfers.
+5. Re-run CPU and OpenACC numerical regressions unchanged.
 
 ## Local verification
 
@@ -250,5 +252,13 @@ face loops with explicit private point state. Its 1/2/4-thread determinism
 fixture reproduces `max|field|=1.6623E+02`, and the selected threaded
 fQ8/Q8/Q4/traditional/upwind/upwind-DRP plus plane-output suite passed 8/8 in
 64.94 s with four threads. Separate per-target Fortran module directories also
-removed a parallel-build race between `waveqlab3d` and `pre_wql3d`. NVHPC and
-H100 qualification of these changes is next.
+removed a parallel-build race between `waveqlab3d` and `pre_wql3d`.
+
+Final Punakha qualification of commit `cee9e79` passed on 2026-08-06. A fresh
+NVHPC 26.5 `gpu-h100` build passed the fQ8 unit, plane-output smoke, both GPU
+capacity fixtures, Q8/Q4, and all three order-6 families (9/9, 41.23 s); the
+locked-interface oracle passed separately in 41.21 s. The NVHPC allocation-
+audit build passed the unit plus plane, Q8, Q4, traditional, upwind,
+upwind-DRP, and locked-interface tests (8/8, 1393.91 s). The locked-interface
+debug allocation run accounted for 1141.03 s and reported zero timestep heap
+calls. Phase 2 is therefore closed.

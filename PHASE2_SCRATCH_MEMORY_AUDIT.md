@@ -1,7 +1,7 @@
 # Phase 2 scratch and allocation audit
 
 Date: 2026-08-06  
-Status: point-stencil scratch corrected; persistent face ownership and accounting implemented
+Status: complete; GNU and NVHPC allocation/thread-safety gates passed
 
 ## Audit scope
 
@@ -265,6 +265,18 @@ The `cpu-threaded` preset enables OpenMP on the six physical-boundary face
 loops. All per-point state is explicitly private and each iteration writes a
 unique face element. A determinism test compares 1, 2, and 4 threads, while the
 selected four-thread numerical suite exercises Q4, Q8, and all order-6 elastic
-families. Login-node GNU qualification passed; NVHPC/H100 qualification is the
-remaining Phase 2 closure check. Numerical GPU offload remains intentionally
-outside Phase 2.
+families. Login-node GNU qualification passed: 1/2/4-thread results were
+identical, and the selected four-thread suite passed 8/8 in 64.94 s.
+
+Punakha NVHPC 26.5 qualification then passed at commit `cee9e79`:
+
+| Gate | Result |
+|---|---:|
+| H100 compiler/runtime, capacity, plane, Q4/Q8 and order-6 suite | 9/9, 41.23 s |
+| H100 locked-interface oracle | pass, 41.21 s |
+| NVHPC allocation audit, unit plus all selected application paths | 8/8, 1393.91 s |
+| NVHPC allocation-audited locked interface (included above) | pass, 1141.03 s |
+
+No allocation-tracker abort occurred. Together with the 131-procedure source
+gate and GNU threaded determinism evidence, this closes Phase 2. Numerical GPU
+offload remains intentionally outside Phase 2.

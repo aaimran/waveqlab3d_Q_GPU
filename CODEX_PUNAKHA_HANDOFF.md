@@ -3,7 +3,7 @@
 Date: 2026-08-06  
 Repository: `/scratch/aimran/waveqlab3d_Q_GPU`  
 Branch: `main`  
-Handoff baseline commit: `439c4bc Update 7`
+Handoff baseline commit: `cee9e79 Close steady-state allocation and thread-safety gates`
 
 ## Purpose of this document
 
@@ -101,7 +101,7 @@ Complete.
 - `WQL3D_ALLOW_GPU_OVERSUBSCRIPTION=1` is test-only.
 - CUDA-aware MPI is still disabled.
 
-### Phase 2 numerical and scratch-safety gates
+### Phase 2 numerical, memory, allocation, and scratch-safety gates
 
 The following are complete and qualified with GNU and NVHPC:
 
@@ -118,6 +118,11 @@ The following are complete and qualified with GNU and NVHPC:
 - Runtime payload accounting reports grid, material/Q, state/rate, PML,
   boundary/work, interface/source, output, maximum host/rank, and predicted
   device/rank bytes.
+- GPU capacity enforcement reserves 1 GiB plus 10% and rejects insufficient
+  configured capacity before timestepping.
+- A transitive 131-procedure source audit and linker allocation tracker prove
+  the selected RK paths perform no steady-state heap allocation.
+- OpenMP 1/2/4-thread determinism and a four-thread eight-test suite pass.
 
 Important measured examples:
 
@@ -139,67 +144,37 @@ kernel timings.
 
 ## Current exact status
 
-Phases 0 and 1 are complete.
+Phases 0-2 are complete. GNU and NVHPC qualification covers numerical
+fixtures, scratch correction, the 178-component structural inventory, runtime
+byte and GPU-capacity accounting, zero-allocation RK evidence, and threaded CPU
+determinism. At `cee9e79`, the H100 selected suite passed 9/9 in 41.23 s and
+the locked interface passed in 41.21 s. The NVHPC allocation-audit suite passed
+8/8 in 1393.91 s, including the 1141.03 s locked-interface stress case.
 
-Phase 2 numerical work, scratch correction, structural inventory, and runtime
-payload accounting are complete. Phase 2 is **not yet closed** because these
-roadmap gates remain:
-
-1. GPU capacity/headroom preflight with explicit reserve.
-2. Evidence that no allocation occurs in steady-state RK stages.
-3. Threaded CPU race-safety evidence.
-4. Ideally, compare predicted device payload with measured OpenACC allocation
-   after the Phase 3 no-kernel data-region smoke test; that final comparison
-   naturally straddles Phases 2 and 3.
-
-Do not begin numerical kernel offload until the first three gates are addressed
-and recorded.
+Phase 3 is next. Do not offload a numerical kernel until its persistent-device
+ownership gate is complete.
 
 ## Exact next implementation task
 
-Implement GPU capacity/headroom enforcement without changing numerical results.
+Implement the smallest Phase 3 persistent-device ownership smoke test without
+changing numerical results.
 
 Recommended safe design:
 
-1. Keep `src/persistent_memory.f90` as the authoritative allocated-payload
-   traversal.
-2. Add a configurable capacity source:
-   - explicit environment override for deterministic tests, such as
-     `WQL3D_GPU_MEMORY_BYTES`;
-   - later, an NVIDIA runtime query when a portable/reliable interface is added.
-3. Define documented reserves rather than treating all reported free memory as
-   usable:
-   - fixed runtime/MPI reserve;
-   - percentage headroom for kernel temporaries and fragmentation;
-   - optional user override for controlled experiments.
-4. Perform the check after all persistent arrays and output structures are
-   initialized but before timestepping/device entry.
-5. Report:
-   - predicted persistent device payload;
-   - configured/detected device capacity;
-   - fixed reserve;
-   - fractional reserve;
-   - usable capacity;
-   - remaining headroom;
-   - pass/fail decision.
-6. Reject insufficient capacity before the first RK step with a dedicated,
-   documented diagnostic code.
-7. Do not reject CPU runs. CPU builds should report payload but skip GPU
-   capacity enforcement.
-8. Add deterministic tests that inject a small capacity (must reject) and a
-   sufficient capacity (must pass). Tests must not depend on the physical H100
-   memory size.
-
-Potential complication: OpenACC does not provide a sufficiently portable
-Fortran API for total/free device memory. Prefer an explicit environment value
-for the first tested implementation rather than parsing `nvidia-smi` from the
-solver. A later small CUDA runtime interoperability layer can supply measured
-capacity.
-
-After capacity enforcement, implement allocation evidence. A reasonable first
-gate is a source audit/check script that rejects `allocate` or `deallocate`
-inside known steady-state call paths, followed by profiler validation on
-Punakha. Do not mistake a static audit alone for runtime proof.
+1. Use the inventory's device-policy classifications to select the first
+   complete, explicit set of allocatable leaf arrays.
+2. Add backend-neutral enter/exit APIs, with a no-op CPU implementation and an
+   OpenACC implementation. Never implicitly deep-copy `domain_type`.
+3. Enter data only after domain/output initialization and capacity approval;
+   exit in reverse ownership order before host deallocation.
+4. Keep all numerical loops on the host in this gate. Add the explicit host
+   synchronization needed so host execution remains the oracle.
+5. Add a short no-kernel H100 smoke test that proves enter, presence, host
+   execution/synchronization, and clean exit.
+6. Compare runtime device allocation with the predicted payload within a
+   documented overhead, and verify no full-volume transfer occurs inside an RK
+   timestep.
+7. Re-run CPU and H100 numerical fixtures unchanged. Keep CUDA-aware MPI off.
 
 ## Punakha environment
 
@@ -358,7 +333,7 @@ git branch --show-current
 git log -5 --oneline
 ```
 
-The handoff baseline should be clean at commit `439c4bc`. If newer commits are
+The handoff baseline should be clean at commit `cee9e79`. If newer commits are
 present, inspect them before assuming this document is current.
 
 Before pulling, never discard unknown Punakha changes. Review or commit them.
@@ -400,22 +375,21 @@ Paste this into Codex after opening the remote repository:
 > Work only in `/scratch/aimran/waveqlab3d_Q_GPU`. Read
 > `CODEX_PUNAKHA_HANDOFF.md` completely, then read the referenced plan and
 > status documents in its required order. Verify Git status and the Punakha
-> NVHPC/MPI environment. Summarize the current migration state and propose the
-> smallest safe implementation for the next Phase 2 gate: deterministic GPU
-> capacity/headroom preflight using the existing runtime persistent-memory
-> accounting. Do not modify `waveqlab3d_Q`, do not enable CUDA-aware MPI, and
-> do not offload numerical kernels yet. Implement only after inspecting the
-> relevant runtime/config/error/test patterns, then verify CPU and H100 builds
-> and update the documentation.
+> NVHPC/MPI environment. Summarize the current migration state and implement
+> the smallest safe Phase 3 persistent-device-data smoke test: explicit leaf
+> ownership, no implicit derived-type deep copy, and no numerical kernel
+> offload. Do not modify `waveqlab3d_Q` or enable CUDA-aware MPI. Verify CPU and
+> H100 builds, device presence/cleanup and unchanged numerical results, then
+> update the documentation.
 
 ## Definition of a successful handoff
 
 The new session understands that:
 
 - the remote Punakha repository is now authoritative;
-- Phase 2 numerical gates are complete but Phase 2 itself is not closed;
-- exact persistent payload accounting already exists;
-- capacity/headroom enforcement is the immediate implementation target;
+- Phase 2 is closed with GNU and NVHPC evidence;
+- exact persistent payload and capacity/headroom accounting already exist;
+- explicit Phase 3 device-data ownership is the immediate target;
 - no numerical GPU kernel is currently offloaded;
 - the CPU oracle and single-source CPU/GPU codebase must remain intact;
 - every change requires CPU plus NVHPC/H100 regression evidence.
