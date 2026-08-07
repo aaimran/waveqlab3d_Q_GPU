@@ -6,16 +6,17 @@ module traditional_cartesian_rhs_backend
   private
   public :: try_traditional_cartesian_rhs
 contains
-  logical function try_traditional_cartesian_rhs(F, G, M, type_of_mesh)
+  subroutine try_traditional_cartesian_rhs(F, G, M, type_of_mesh, handled)
     use mpi3dbasic, only : nprocs
     type(block_type), intent(inout) :: F
     type(block_grid_t), intent(in) :: G
     type(block_material), intent(inout) :: M
     character(len=*), intent(in) :: type_of_mesh
+    logical, intent(out) :: handled
     integer :: n1, n2, n3
     integer(kind=8) :: field_bytes, metric_bytes, material_bytes
 
-    try_traditional_cartesian_rhs = .false.
+    handled = .false.
     if (nprocs /= 1) return
     if (trim(type_of_mesh) /= 'cartesian') return
     if (trim(F%fd_type) /= 'traditional' .or. F%order /= 6) return
@@ -42,8 +43,8 @@ contains
          G%metricy, G%metricz, M%M, n1, n2, n3, size(G%metricx,4), &
          size(M%M,4), G%hq, G%hr, G%hs)
     !$acc update self(F%F%DF)
-    try_traditional_cartesian_rhs = .true.
-  end function try_traditional_cartesian_rhs
+    handled = .true.
+  end subroutine try_traditional_cartesian_rhs
 
   subroutine cartesian_elastic_o6_interior_kernel(field, rate, metricx, &
        metricy, metricz, material, n1, n2, n3, nm, nmat, hq, hr, hs)

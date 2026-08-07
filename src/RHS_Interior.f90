@@ -26,6 +26,7 @@ contains
      type(block_material), intent(inout) :: M
     
     character(len=64), intent(in) :: type_of_mesh
+    logical :: rhs_handled
     
     
     
@@ -33,8 +34,8 @@ contains
        
     case('traditional')
        ! compute all spatial derivatives and add interior rates to rates array, no forcing
-       if (.not.try_traditional_cartesian_rhs(F, G, M, type_of_mesh)) &
-            call JJU_x6_interior(F, G, M, type_of_mesh)
+       call try_traditional_cartesian_rhs(F, G, M, type_of_mesh, rhs_handled)
+       if (.not.rhs_handled) call JJU_x6_interior(F, G, M, type_of_mesh)
        
        ! print *, 'interior'
        

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Confine explicit RK device movement to the qualified Phase 4 bridge."""
+"""Confine explicit RK device movement to qualified Phase 4/5 bridges."""
 
 from __future__ import annotations
 
@@ -47,24 +47,29 @@ def main() -> int:
             pending.extend(by_name.get(called.lower(), ()))
 
     violations: list[str] = []
-    qualified_bridge: list[str] = []
+    phase4_bridge: list[str] = []
+    phase5_bridge: list[str] = []
     for procedure in sorted(reachable, key=lambda item: (str(item.path), item.start)):
         for offset, line in enumerate(procedure.lines):
             if RUNTIME_TRANSFER.search(logical_code(line)) or DIRECTIVE_TRANSFER.search(line):
                 finding = f"{procedure.path}:{procedure.start + offset}: {procedure.name}: {line.strip()}"
                 if procedure.path.name == "rk_vector_openacc.f90":
-                    qualified_bridge.append(finding)
+                    phase4_bridge.append(finding)
+                elif procedure.path.name == "traditional_cartesian_rhs_openacc.f90":
+                    phase5_bridge.append(finding)
                 else:
                     violations.append(finding)
     if violations:
         print("FAIL: unqualified explicit device transfer is reachable from time_step_RK")
         print("\n".join(violations))
         return 1
-    if len(qualified_bridge) != 5:
-        print(f"FAIL: expected 5 qualified Phase 4 transfer calls, found {len(qualified_bridge)}")
-        print("\n".join(qualified_bridge))
+    if len(phase4_bridge) != 5 or len(phase5_bridge) != 1:
+        print(f"FAIL: expected 5 Phase 4 and 1 Phase 5 transfer calls, found "
+              f"{len(phase4_bridge)} and {len(phase5_bridge)}")
+        print("\n".join(phase4_bridge + phase5_bridge))
         return 1
-    print(f"PASS: {len(reachable)} RK-reachable procedures confine 5 explicit transfers to the Phase 4 bridge")
+    print(f"PASS: {len(reachable)} RK-reachable procedures confine 6 explicit "
+          "transfers to the Phase 4/5 bridges")
     return 0
 
 

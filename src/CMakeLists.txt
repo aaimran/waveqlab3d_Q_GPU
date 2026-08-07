@@ -208,6 +208,12 @@ if(WQL3D_ENABLE_OPENACC)
       -D EXE=$<TARGET_FILE:waveqlab3d>
       -D INPUT=${CMAKE_CURRENT_SOURCE_DIR}/../inputfile/test_elastic_traditional_o6.in
       -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/run_device_data_smoke.cmake)
+  add_test(NAME phase5_traditional_cartesian_rhs_launch
+    COMMAND ${CMAKE_COMMAND}
+      -D MPIEXEC=${WQL3D_MPI_RUNNER}
+      -D EXE=$<TARGET_FILE:waveqlab3d>
+      -D INPUT=${CMAKE_CURRENT_SOURCE_DIR}/../inputfile/test_elastic_traditional_o6.in
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/run_phase5_rhs_launch.cmake)
 endif()
 
 if(WQL3D_ENABLE_OPENMP)
