@@ -214,6 +214,17 @@ if(WQL3D_ENABLE_OPENACC)
       -D EXE=$<TARGET_FILE:waveqlab3d>
       -D INPUT=${CMAKE_CURRENT_SOURCE_DIR}/../inputfile/test_elastic_traditional_o6.in
       -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/run_phase5_rhs_launch.cmake)
+  foreach(fallback_case IN ITEMS
+      test_elastic_upwind_o6.in
+      test_anelastic_Q8_dynamic.in)
+    get_filename_component(fallback_name ${fallback_case} NAME_WE)
+    add_test(NAME phase5_fallback_${fallback_name}
+      COMMAND ${CMAKE_COMMAND}
+        -D MPIEXEC=${WQL3D_MPI_RUNNER}
+        -D EXE=$<TARGET_FILE:waveqlab3d>
+        -D INPUT=${CMAKE_CURRENT_SOURCE_DIR}/../inputfile/${fallback_case}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/run_phase5_fallback.cmake)
+  endforeach()
 endif()
 
 if(WQL3D_ENABLE_OPENMP)

@@ -571,19 +571,19 @@ contains
             call fatal_local('RUN-FQ8-001', &
             'Non-finite fQ8 field or memory state detected at shutdown.', 'close_domain')
        if (rank == 0 .and. trim(D%response) == 'anelastic-Q4') &
-            write(*,'(A,ES12.4,A,ES12.4)') &
+            write(*,'(A,ES24.16,A,ES24.16)') &
             'Q4 final state: max|field|=', global_field, ', max|memory|=', global_eta
        if (rank == 0 .and. trim(D%response) == 'anelastic-Q8') &
-            write(*,'(A,ES12.4,A,ES12.4)') &
+            write(*,'(A,ES24.16,A,ES24.16)') &
             'Q8 final state: max|field|=', global_field, ', max|memory|=', global_eta
        if (rank == 0 .and. trim(D%response) == 'anelastic-fQ8') &
-            write(*,'(A,ES12.4,A,ES12.4)') &
+            write(*,'(A,ES24.16,A,ES24.16)') &
             'fQ8 final state: max|field|=', global_field, ', max|memory|=', global_eta
     end if
     if (rank == 0 .and. trim(D%response) == 'elastic') &
-         write(*,'(A,ES12.4)') 'Elastic final state: max|field|=', global_field
+         write(*,'(A,ES24.16)') 'Elastic final state: max|field|=', global_field
     if (rank == 0 .and. trim(D%response) == 'elastic' .and. D%nblocks == 2) &
-         write(*,'(A,ES12.4,A,ES12.4)') 'Elastic block maxima: block1=', &
+         write(*,'(A,ES24.16,A,ES24.16)') 'Elastic block maxima: block1=', &
          global_block_field(1), ', block2=', global_block_field(2)
 
     if ( D%w_fault .eqv.  .true.) then

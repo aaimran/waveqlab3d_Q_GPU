@@ -188,6 +188,9 @@ contains
     do i = 1, D%nifaces
        call update_host_iface_type(D%I(i), leaf_count, payload_bytes)
     end do
+    if (leaf_count > active_leaf_count .or. payload_bytes > active_payload_bytes) &
+         call device_data_error('RUN-DEVICE-DATA-013', &
+         'Host-update traversal exceeds the active device ownership set.')
     call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
     if (rank == 0) write(*,'(A,I0,A,F12.3,A)') &
          '  explicit host update:       PASS, leaves=', leaf_count, &

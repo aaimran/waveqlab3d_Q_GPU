@@ -24,7 +24,22 @@ contains
         M%anelastic_Qf .or. M%anelastic_Qf8 .or. &
         M%anelastic_const_Q_4M .or. M%anelastic_const_Q_8M) return
     if (any(F%PMLB(:)%pml)) return
+    if (.not.allocated(F%F%F) .or. .not.allocated(F%F%DF) .or. &
+        .not.allocated(G%metricx) .or. .not.allocated(G%metricy) .or. &
+        .not.allocated(G%metricz) .or. .not.allocated(M%M)) return
     if (size(F%F%F,4) /= 9 .or. size(M%M,4) < 3) return
+    if (any(shape(F%F%DF) /= shape(F%F%F))) return
+    if (any(shape(G%metricx, kind=8) /= shape(G%metricy, kind=8)) .or. &
+        any(shape(G%metricx, kind=8) /= shape(G%metricz, kind=8))) return
+    if (size(G%metricx,1) /= size(F%F%F,1) .or. &
+        size(G%metricx,2) /= size(F%F%F,2) .or. &
+        size(G%metricx,3) /= size(F%F%F,3)) return
+    if (size(M%M,1) /= size(F%F%F,1) .or. &
+        size(M%M,2) /= size(F%F%F,2) .or. &
+        size(M%M,3) /= size(F%F%F,3)) return
+    if (G%C%mq /= lbound(F%F%F,1) .or. G%C%pq /= ubound(F%F%F,1) .or. &
+        G%C%mr /= lbound(F%F%F,2) .or. G%C%pr /= ubound(F%F%F,2) .or. &
+        G%C%ms /= lbound(F%F%F,3) .or. G%C%ps /= ubound(F%F%F,3)) return
 
     n1 = size(F%F%F,1); n2 = size(F%F%F,2); n3 = size(F%F%F,3)
     if (n1 < 13 .or. n2 < 13 .or. n3 < 13) return

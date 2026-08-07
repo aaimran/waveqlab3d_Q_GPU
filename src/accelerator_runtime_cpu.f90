@@ -21,6 +21,7 @@ contains
 
     if (initialized) return
     call MPI_Comm_rank(MPI_COMM_WORLD, world_rank, ierr)
+    call check_mpi(ierr, 'MPI_Comm_rank(world)')
     call MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, world_rank, &
          MPI_INFO_NULL, node_comm, ierr)
     call check_mpi(ierr, 'MPI_Comm_split_type')
