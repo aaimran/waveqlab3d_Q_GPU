@@ -5,6 +5,7 @@ module traditional_cartesian_rhs_backend
   implicit none
   private
   public :: try_traditional_cartesian_rhs
+  logical, save :: diagnostics_reported = .false.
 contains
   subroutine try_traditional_cartesian_rhs(F, G, M, type_of_mesh, handled)
     use mpi3dbasic, only : nprocs
@@ -27,7 +28,8 @@ contains
     if (.not.allocated(F%F%F) .or. .not.allocated(F%F%DF) .or. &
         .not.allocated(G%metricx) .or. .not.allocated(G%metricy) .or. &
         .not.allocated(G%metricz) .or. .not.allocated(M%M)) return
-    if (environment_true('WQL3D_PHASE5_DIAGNOSTICS')) then
+    if (environment_true('WQL3D_PHASE5_DIAGNOSTICS') .and. &
+        .not.diagnostics_reported) then
       write(*,'(A,6(I0,1X))') 'Phase 5 field bounds: ', &
            lbound(F%F%F,1), ubound(F%F%F,1), lbound(F%F%F,2), &
            ubound(F%F%F,2), lbound(F%F%F,3), ubound(F%F%F,3)
@@ -96,9 +98,12 @@ contains
     if (xlo < 4 .or. xhi > n1-3 .or. xlo > xhi .or. &
         ylo < 4 .or. yhi > n2-3 .or. ylo > yhi .or. &
         zlo < 4 .or. zhi > n3-3 .or. zlo > zhi) return
-    if (environment_true('WQL3D_PHASE5_DIAGNOSTICS')) &
-         write(*,'(A,6(I0,1X))') 'Phase 5 raw interior bounds: ', &
-         xlo, xhi, ylo, yhi, zlo, zhi
+    if (environment_true('WQL3D_PHASE5_DIAGNOSTICS') .and. &
+        .not.diagnostics_reported) then
+      write(*,'(A,6(I0,1X))') 'Phase 5 raw interior bounds: ', &
+           xlo, xhi, ylo, yhi, zlo, zhi
+      diagnostics_reported = .true.
+    end if
     field_bytes = int(size(F%F%F),8)*int(storage_size(0.0_wp)/8,8)
     metric_bytes = int(size(G%metricx),8)*int(storage_size(0.0_wp)/8,8)
     material_bytes = int(size(M%M),8)*int(storage_size(0.0_wp)/8,8)
