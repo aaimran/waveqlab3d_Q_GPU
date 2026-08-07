@@ -4,8 +4,9 @@ Last updated: 2026-08-06
 
 ## Current phase
 
-Phases 0-3 are complete and qualified with GNU and NVHPC. Phase 4 low-risk RK
-vector-kernel offload is next; no numerical kernel is offloaded yet.
+Phases 0-4 are complete and qualified with GNU and NVHPC. The low-risk RK rate
+scaling and state-update kernels now execute on H100. Phase 5, a narrow
+traditional Cartesian elastic RHS offload, is next.
 
 ## Implemented
 
@@ -31,23 +32,29 @@ vector-kernel offload is next; no numerical kernel is offloaded yet.
 - All 158 `copyin`/`create` persistent-array declarations now have generated,
   explicit OpenACC leaf traversal with presence checks, exact byte accounting,
   reverse cleanup, and an explicit host-update API.
+- All 49 RK rate-scale and 49 state-update operations use CPU/OpenACC backend
+  kernels, including attenuation and PML state.
+- An asymmetric numerical fixture and an NVHPC notification gate require the
+  two named GPU kernels, exact expected results, and no implicit allocation.
 
 ## Not implemented yet
 
-- No numerical kernel is offloaded.
-- No simulation array is persistent on device.
+- Spatial RHS, boundary/interface, source, and MPI numerical work remains on
+  the host.
+- Phase 4's host RHS boundary requires five explicit synchronization sites;
+  useful GPU performance is not yet expected.
 - CUDA-aware MPI has not been exercised; its option currently records intent.
 - No GPU result is qualified for scientific use.
 
 ## Next gate
 
-1. Offload the low-risk `DF` scaling and `F` update RK vector kernels using the
-   existing persistent leaf ownership.
-2. Add asymmetric-shape kernel tests and one synthetic complete RK update.
-3. Preserve the CPU implementation and frozen numerical oracle.
-4. Require `present` data and verify no implicit transfers with NVHPC runtime
-   notifications/profiling.
-5. Keep CUDA-aware MPI disabled.
+1. Offload only the traditional order-6 Cartesian homogeneous elastic RHS for
+   one rank, one GPU, and one block.
+2. Exclude PML, attenuation, fault/interface, plasticity, and alternate
+   operator families from the first Phase 5 gate.
+3. Preserve the CPU oracle and validate receiver/final-state output before
+   widening the physics scope.
+4. Keep CUDA-aware MPI disabled.
 
 ## Local verification
 

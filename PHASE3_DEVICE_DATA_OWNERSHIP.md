@@ -112,3 +112,7 @@ oracle/harness limitations, not Phase 3 device-data failures; the current
 - CUDA-aware MPI remains disabled: PASS.
 
 Phase 3 is closed. Phase 4 may begin with low-risk RK vector kernels.
+
+Subsequent status: Phase 4 is now complete; see
+`PHASE4_RK_VECTOR_KERNELS.md`. The no-kernel/no-RK-transfer statements above
+remain the historical Phase 3 baseline.

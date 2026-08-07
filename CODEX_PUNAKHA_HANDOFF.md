@@ -3,7 +3,7 @@
 Date: 2026-08-06  
 Repository: `/scratch/aimran/waveqlab3d_Q_GPU`  
 Branch: `main`  
-Handoff baseline: Phase 3 implementation through `92baf7d`
+Handoff baseline: Phase 4 implementation through `539d5d2`
 
 ## Purpose of this document
 
@@ -27,8 +27,8 @@ the CPU solver as the numerical oracle throughout the migration.
   continue to use the same numerical source.
 - Do not enable CUDA-aware MPI yet.
 - Do not claim GPU acceleration merely because the `gpu-h100` preset runs.
-  At this handoff, OpenACC runtime/device binding is active, but no numerical
-  kernel is offloaded.
+  At this handoff, only the Phase 4 RK vector kernels are offloaded; the spatial
+  RHS remains on the host and GPU performance is not yet qualified.
 - Preserve float64 working precision and scientific behavior.
 - Make small, gated changes. Build and test after every meaningful step.
 - Record every Punakha qualification result in the relevant Markdown report
@@ -46,13 +46,15 @@ the CPU solver as the numerical oracle throughout the migration.
    - Structural inventory and exact runtime payload accounting.
 5. `PHASE3_DEVICE_DATA_OWNERSHIP.md`
    - Explicit leaf residency, host update, transfer, memory, and cleanup gates.
-6. `ACCELERATOR_RUNTIME.md`
+6. `PHASE4_RK_VECTOR_KERNELS.md`
+   - RK backend, explicit hybrid bridge, launch evidence, and qualification.
+7. `ACCELERATOR_RUNTIME.md`
    - Local-rank discovery, H100 binding, and oversubscription rules.
-7. `NVHPC_shutdown_regression_fix.md`
+8. `NVHPC_shutdown_regression_fix.md`
    - Important NVHPC optional-argument correctness fix.
-8. `punakha_nvdia_install.md`
+9. `punakha_nvdia_install.md`
    - Actual local NVHPC 26.5 installation and home-quota workaround.
-9. `CMakePresets.json` and `src/CMakeLists.txt`
+10. `CMakePresets.json` and `src/CMakeLists.txt`
    - Current build variants and source ordering.
 
 Do not rely only on older “Next gate” prose near the top of
@@ -146,34 +148,33 @@ kernel timings.
 
 ## Current exact status
 
-Phases 0-3 are complete. Phase 3 explicitly traverses every allocated instance
-of all 158 device-policy declarations, retains them across timestepping,
-provides an explicit host-update API, validates presence, and deletes leaves in
-reverse order. The H100 smoke reconciled 32.334 MiB of inventory/traversal
-payload with a 42.000 MiB runtime allocation delta and 9.666 MiB overhead.
-Focused H100 coverage passed 11/11 in 105.16 s; CPU oracle coverage passed 7/7
-in 30.59 s. NVHPC notifications showed no RK transfer or kernel launch.
+Phases 0-4 are complete. Phase 4 routes all 49 rate-scale and 49 state-update
+sites through CPU/OpenACC backends. The asymmetric unit oracle reports zero
+error, and the launch gate proves both named kernels execute on H100 without
+implicit allocation. Focused H100 coverage passed 12/12 in 116.36 s; CPU
+oracle coverage passed 8/8 in 29.60 s.
 
-No numerical GPU kernel is offloaded yet. Phase 4 is next.
+The spatial RHS and MPI paths remain on the host. Five explicit transfer sites
+form the temporary Phase 4 synchronization bridge, producing 150 transfers in
+the qualified 30-stage elastic run. This is correctness-qualified GPU
+execution, not yet a performance result. Phase 5 is next.
 
 ## Exact next implementation task
 
-Offload the smallest low-risk Phase 4 RK vector kernels without changing
-numerical results.
+Offload the narrowest Phase 5 spatial RHS path without changing numerical
+results.
 
 Recommended safe design:
 
-1. Port `F%DF = A*F%DF` and `F%F = F%F + dt*F%DF` first, as separate kernels.
-2. Preserve a CPU implementation and use the existing persistent data with
-   `present` requirements; never add implicit copies.
-3. Preserve the x-contiguous vector direction and make gang/vector/collapse
-   choices explicit.
-4. Add asymmetric local-shape unit tests and a synthetic one-stage/one-step
-   rate/state comparison against CPU.
-5. Qualify a complete elastic run and then attenuation/PML updates separately.
-6. Use NVHPC notification/profiling evidence to prove kernels execute on H100
-   and no hidden transfer occurs inside RK.
-7. Keep CUDA-aware MPI disabled and do not port the spatial RHS in Phase 4.
+1. Start with one rank, one GPU, one block, Cartesian homogeneous elasticity,
+   the traditional order-6 operator, and receiver/final-state output only.
+2. Exclude PML, attenuation, faults/interfaces, plasticity, and upwind variants
+   from the first gate.
+3. Preserve the CPU implementation and frozen oracle; require present data and
+   explicit launch geometry.
+4. Measure transfers and kernel launches, and do not widen scope until the
+   narrow path matches the CPU result.
+5. Keep CUDA-aware MPI disabled.
 
 ## Punakha environment
 
