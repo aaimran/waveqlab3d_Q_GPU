@@ -34,6 +34,7 @@ contains
       write(*,'(A,9(I0,1X))') 'Phase 5 grid indices: ', G%C%mq, G%C%pq, &
            G%C%mr, G%C%pr, G%C%ms, G%C%ps, G%C%nq, G%C%nr, G%C%ns
       write(*,'(A,4(I0,1X))') 'Phase 5 field shape: ', shape(F%F%F)
+      write(*,'(A,4(I0,1X))') 'Phase 5 field lower bounds: ', lbound(F%F%F)
       write(*,'(A,4(I0,1X))') 'Phase 5 rate shape: ', shape(F%F%DF)
       write(*,'(A,4(I0,1X))') 'Phase 5 metric shape: ', shape(G%metricx)
       write(*,'(A,4(I0,1X))') 'Phase 5 metric-y shape: ', shape(G%metricy)
