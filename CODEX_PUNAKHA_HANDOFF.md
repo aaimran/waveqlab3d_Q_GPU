@@ -3,7 +3,7 @@
 Date: 2026-08-06  
 Repository: `/scratch/aimran/waveqlab3d_Q_GPU`  
 Branch: `main`  
-Handoff baseline: Phase 5 implementation through `3c275c9`
+Handoff baseline: audited Phase 5 implementation through `8264322`
 
 ## Purpose of this document
 
@@ -26,9 +26,9 @@ the CPU solver as the numerical oracle throughout the migration.
 - Do not split CPU and GPU into separate codebases. CPU and OpenACC builds must
   continue to use the same numerical source.
 - Do not enable CUDA-aware MPI yet.
-- Do not claim GPU acceleration merely because the `gpu-h100` preset runs.
-  At this handoff, only the Phase 4 RK vector kernels are offloaded; the spatial
-  RHS remains on the host and GPU performance is not yet qualified.
+- Do not claim useful GPU acceleration merely because the preset runs. Phase 4
+  RK vector kernels and the narrow Phase 5 strict-interior RHS are offloaded,
+  but explicit hybrid transfers remain and performance is not yet qualified.
 - Preserve float64 working precision and scientific behavior.
 - Make small, gated changes. Build and test after every meaningful step.
 - Record every Punakha qualification result in the relevant Markdown report
@@ -50,13 +50,15 @@ the CPU solver as the numerical oracle throughout the migration.
    - RK backend, explicit hybrid bridge, launch evidence, and qualification.
 7. `PHASE5_TRADITIONAL_CARTESIAN_RHS.md`
    - Qualified RHS scope, fallback, sanitizer, transfer, and timing evidence.
-8. `ACCELERATOR_RUNTIME.md`
+8. `PHASE1_5_DEEP_AUDIT.md`
+   - Corrected ghost indexing, strengthened fallbacks, and requalification.
+9. `ACCELERATOR_RUNTIME.md`
    - Local-rank discovery, H100 binding, and oversubscription rules.
-9. `NVHPC_shutdown_regression_fix.md`
+10. `NVHPC_shutdown_regression_fix.md`
    - Important NVHPC optional-argument correctness fix.
-10. `punakha_nvdia_install.md`
+11. `punakha_nvdia_install.md`
    - Actual local NVHPC 26.5 installation and home-quota workaround.
-11. `CMakePresets.json` and `src/CMakeLists.txt`
+12. `CMakePresets.json` and `src/CMakeLists.txt`
    - Current build variants and source ordering.
 
 Do not rely only on older “Next gate” prose near the top of
@@ -160,10 +162,12 @@ The spatial RHS and MPI paths remain on the host. Five explicit transfer sites
 form the temporary Phase 4 synchronization bridge, producing 150 transfers in
 the qualified 30-stage elastic run. This is correctness-qualified GPU
 execution, not yet a performance result. Phase 5 adds the guarded one-rank
-traditional Cartesian homogeneous elastic strict-interior RHS kernel. It
-launches 30 times in the six-step oracle, matches `max|field|=1.6623E+02`, and
-passes Compute Sanitizer with zero errors. The host near-boundary/SAT/source
-bridge remains explicit. Phase 6 is next.
+traditional Cartesian homogeneous elastic strict-interior RHS kernel. The deep
+audit corrected physical `7:35` through ghosted `-2:44` storage to raw
+`10:38`. It launches 30 times with 191 gangs, matches the CPU at 16 printed
+digits (`1.6623128367649574E+02`), and passes Compute Sanitizer with zero
+errors. Upwind and Q8 negative-path tests prove CPU fallback. The host
+near-boundary/SAT/source bridge remains explicit. Phase 6 is next.
 
 ## Exact next implementation task
 

@@ -28,18 +28,20 @@ Phase 6 with a dedicated stage-level oracle.
 ## Execution and numerical evidence
 
 The durable `phase5_traditional_cartesian_rhs_launch` CTest requires 30 named
-CUDA kernel launches, no implicit device allocation, and the frozen final-state
-diagnostic `max|field|=1.6623E+02`. On H100 each volume launch used 335 gangs
-and vector length 128. The one-rank GPU result and two-rank CPU fallback match
-in the existing decomposition regression.
+CUDA kernel launches, no implicit device allocation, and a nonzero final-state
+diagnostic. After the deep audit corrected ghost-cell index mapping, each
+volume launch uses 191 gangs and vector length 128 for the physical `29^3`
+strict interior. The one-rank GPU result and two-rank CPU fallback match at 16
+printed digits: `1.6623128367649574E+02`.
 
-Compute Sanitizer memcheck completed the six-step case with zero errors. The
-output-disabled timestep totals, excluding initialization and cleanup, were:
+Compute Sanitizer memcheck completed with zero errors, and racecheck reported
+zero hazards, errors, or warnings. The output-disabled timestep totals,
+excluding initialization and cleanup, were:
 
 | Backend | Six steps | Mean step |
 |---|---:|---:|
-| NVHPC CPU | 0.668562 s | 0.111427 s |
-| H100 hybrid | 0.820860 s | 0.136810 s |
+| NVHPC CPU | 0.658815 s | 0.109803 s |
+| H100 hybrid | 0.824372 s | 0.137395 s |
 
 This is an execution/correctness measurement, not a speedup claim. Explicit RK
 and boundary synchronization still dominates this small 41-cubed case.
@@ -55,3 +57,6 @@ and boundary synchronization still dominates this small 41-cubed case.
 
 Phase 5 is closed at the deliberately narrow strict-interior boundary. Phase 6
 owns physical/SBP boundary, SAT, and compact PML device expansion.
+
+The corrected-index requalification is recorded in
+`PHASE1_5_DEEP_AUDIT.md`.

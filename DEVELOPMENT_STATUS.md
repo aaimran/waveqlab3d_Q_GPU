@@ -8,6 +8,11 @@ Phases 0-5 are complete and qualified with GNU and NVHPC. The RK vector kernels
 and the narrow one-rank traditional Cartesian elastic strict-interior RHS now
 execute on H100. Phase 6 boundary/SAT/PML expansion is next.
 
+A post-Phase-5 deep audit found and corrected a ghost-cell index-mapping defect
+in the Phase 5 raw kernel, strengthened ownership/runtime checks, raised final
+oracle precision to 16 digits, and added explicit fallback tests. See
+`PHASE1_5_DEEP_AUDIT.md`.
+
 ## Implemented
 
 - A standalone copy of the MPI/CPU solver, tests, inputs, and utilities is now
@@ -38,6 +43,8 @@ execute on H100. Phase 6 boundary/SAT/PML expansion is next.
   two named GPU kernels, exact expected results, and no implicit allocation.
 - The traditional order-6 Cartesian homogeneous elastic volume RHS has a
   guarded one-rank OpenACC backend and a named-kernel execution oracle.
+- Phase 5 converts physical `7:35` interior bounds through `-2:44` allocatable
+  bounds to raw `10:38`; its launch gate locks the resulting 191-gang geometry.
 
 ## Not implemented yet
 
