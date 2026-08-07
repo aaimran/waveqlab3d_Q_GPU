@@ -13,7 +13,7 @@ contains
     type(block_material), intent(inout) :: M
     character(len=*), intent(in) :: type_of_mesh
     logical, intent(out) :: handled
-    integer :: n1, n2, n3
+    integer :: n1, n2, n3, xlo, xhi, ylo, yhi, zlo, zhi
     integer(kind=8) :: field_bytes, metric_bytes, material_bytes
 
     handled = .false.
@@ -37,12 +37,34 @@ contains
     if (size(M%M,1) /= size(F%F%F,1) .or. &
         size(M%M,2) /= size(F%F%F,2) .or. &
         size(M%M,3) /= size(F%F%F,3)) return
-    if (G%C%mq /= lbound(F%F%F,1) .or. G%C%pq /= ubound(F%F%F,1) .or. &
-        G%C%mr /= lbound(F%F%F,2) .or. G%C%pr /= ubound(F%F%F,2) .or. &
-        G%C%ms /= lbound(F%F%F,3) .or. G%C%ps /= ubound(F%F%F,3)) return
+    if (any(lbound(F%F%DF) /= lbound(F%F%F))) return
+    if (lbound(G%metricx,1) /= lbound(F%F%F,1) .or. &
+        lbound(G%metricx,2) /= lbound(F%F%F,2) .or. &
+        lbound(G%metricx,3) /= lbound(F%F%F,3)) return
+    if (lbound(G%metricy,1) /= lbound(F%F%F,1) .or. &
+        lbound(G%metricy,2) /= lbound(F%F%F,2) .or. &
+        lbound(G%metricy,3) /= lbound(F%F%F,3)) return
+    if (lbound(G%metricz,1) /= lbound(F%F%F,1) .or. &
+        lbound(G%metricz,2) /= lbound(F%F%F,2) .or. &
+        lbound(G%metricz,3) /= lbound(F%F%F,3)) return
+    if (lbound(M%M,1) /= lbound(F%F%F,1) .or. &
+        lbound(M%M,2) /= lbound(F%F%F,2) .or. &
+        lbound(M%M,3) /= lbound(F%F%F,3)) return
+    if (G%C%mq < lbound(F%F%F,1) .or. G%C%pq > ubound(F%F%F,1) .or. &
+        G%C%mr < lbound(F%F%F,2) .or. G%C%pr > ubound(F%F%F,2) .or. &
+        G%C%ms < lbound(F%F%F,3) .or. G%C%ps > ubound(F%F%F,3)) return
 
     n1 = size(F%F%F,1); n2 = size(F%F%F,2); n3 = size(F%F%F,3)
     if (n1 < 13 .or. n2 < 13 .or. n3 < 13) return
+    xlo = 7 - lbound(F%F%F,1) + 1
+    xhi = G%C%nq - 6 - lbound(F%F%F,1) + 1
+    ylo = 7 - lbound(F%F%F,2) + 1
+    yhi = G%C%nr - 6 - lbound(F%F%F,2) + 1
+    zlo = 7 - lbound(F%F%F,3) + 1
+    zhi = G%C%ns - 6 - lbound(F%F%F,3) + 1
+    if (xlo < 4 .or. xhi > n1-3 .or. xlo > xhi .or. &
+        ylo < 4 .or. yhi > n2-3 .or. ylo > yhi .or. &
+        zlo < 4 .or. zhi > n3-3 .or. zlo > zhi) return
     field_bytes = int(size(F%F%F),8)*int(storage_size(0.0_wp)/8,8)
     metric_bytes = int(size(G%metricx),8)*int(storage_size(0.0_wp)/8,8)
     material_bytes = int(size(M%M),8)*int(storage_size(0.0_wp)/8,8)
@@ -56,14 +78,16 @@ contains
 
     call cartesian_elastic_o6_interior_kernel(F%F%F, F%F%DF, G%metricx, &
          G%metricy, G%metricz, M%M, n1, n2, n3, size(G%metricx,4), &
-         size(M%M,4), G%hq, G%hr, G%hs)
+         size(M%M,4), xlo, xhi, ylo, yhi, zlo, zhi, G%hq, G%hr, G%hs)
     !$acc update self(F%F%DF)
     handled = .true.
   end subroutine try_traditional_cartesian_rhs
 
   subroutine cartesian_elastic_o6_interior_kernel(field, rate, metricx, &
-       metricy, metricz, material, n1, n2, n3, nm, nmat, hq, hr, hs)
+       metricy, metricz, material, n1, n2, n3, nm, nmat, &
+       xlo, xhi, ylo, yhi, zlo, zhi, hq, hr, hs)
     integer, intent(in) :: n1, n2, n3, nm, nmat
+    integer, intent(in) :: xlo, xhi, ylo, yhi, zlo, zhi
     real(kind=wp), intent(in) :: field(n1,n2,n3,9)
     real(kind=wp), intent(inout) :: rate(n1,n2,n3,9)
     real(kind=wp), intent(in) :: metricx(n1,n2,n3,nm)
@@ -77,9 +101,9 @@ contains
 
     !$acc parallel loop gang vector collapse(3) present(field,rate,metricx,metricy,metricz,material) &
     !$acc& private(dfx,dfy,dfz,cx,cy,cz,a1,a2,a3,a4,coefficient,s,component)
-    do z = 7, n3-6
-      do y = 7, n2-6
-        do x = 7, n1-6
+    do z = zlo, zhi
+      do y = ylo, yhi
+        do x = xlo, xhi
           dfx = 0.0_wp; dfy = 0.0_wp; dfz = 0.0_wp
           do s = 1, 3
             if (s == 1) then
