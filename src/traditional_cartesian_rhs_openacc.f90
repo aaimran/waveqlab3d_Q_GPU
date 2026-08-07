@@ -36,6 +36,9 @@ contains
       write(*,'(A,4(I0,1X))') 'Phase 5 field shape: ', shape(F%F%F)
       write(*,'(A,4(I0,1X))') 'Phase 5 metric shape: ', shape(G%metricx)
       write(*,'(A,4(I0,1X))') 'Phase 5 material shape: ', shape(M%M)
+      write(*,'(A,4(I0,1X))') 'Phase 5 rate lower bounds: ', lbound(F%F%DF)
+      write(*,'(A,4(I0,1X))') 'Phase 5 metric lower bounds: ', lbound(G%metricx)
+      write(*,'(A,4(I0,1X))') 'Phase 5 material lower bounds: ', lbound(M%M)
     end if
     if (size(F%F%F,4) /= 9 .or. size(M%M,4) < 3) return
     if (any(shape(F%F%DF) /= shape(F%F%F))) return
@@ -75,6 +78,9 @@ contains
     if (xlo < 4 .or. xhi > n1-3 .or. xlo > xhi .or. &
         ylo < 4 .or. yhi > n2-3 .or. ylo > yhi .or. &
         zlo < 4 .or. zhi > n3-3 .or. zlo > zhi) return
+    if (environment_true('WQL3D_PHASE5_DIAGNOSTICS')) &
+         write(*,'(A,6(I0,1X))') 'Phase 5 raw interior bounds: ', &
+         xlo, xhi, ylo, yhi, zlo, zhi
     field_bytes = int(size(F%F%F),8)*int(storage_size(0.0_wp)/8,8)
     metric_bytes = int(size(G%metricx),8)*int(storage_size(0.0_wp)/8,8)
     material_bytes = int(size(M%M),8)*int(storage_size(0.0_wp)/8,8)
