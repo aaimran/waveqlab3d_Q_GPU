@@ -34,10 +34,15 @@ contains
       write(*,'(A,9(I0,1X))') 'Phase 5 grid indices: ', G%C%mq, G%C%pq, &
            G%C%mr, G%C%pr, G%C%ms, G%C%ps, G%C%nq, G%C%nr, G%C%ns
       write(*,'(A,4(I0,1X))') 'Phase 5 field shape: ', shape(F%F%F)
+      write(*,'(A,4(I0,1X))') 'Phase 5 rate shape: ', shape(F%F%DF)
       write(*,'(A,4(I0,1X))') 'Phase 5 metric shape: ', shape(G%metricx)
+      write(*,'(A,4(I0,1X))') 'Phase 5 metric-y shape: ', shape(G%metricy)
+      write(*,'(A,4(I0,1X))') 'Phase 5 metric-z shape: ', shape(G%metricz)
       write(*,'(A,4(I0,1X))') 'Phase 5 material shape: ', shape(M%M)
       write(*,'(A,4(I0,1X))') 'Phase 5 rate lower bounds: ', lbound(F%F%DF)
       write(*,'(A,4(I0,1X))') 'Phase 5 metric lower bounds: ', lbound(G%metricx)
+      write(*,'(A,4(I0,1X))') 'Phase 5 metric-y lower bounds: ', lbound(G%metricy)
+      write(*,'(A,4(I0,1X))') 'Phase 5 metric-z lower bounds: ', lbound(G%metricz)
       write(*,'(A,4(I0,1X))') 'Phase 5 material lower bounds: ', lbound(M%M)
     end if
     if (size(F%F%F,4) /= 9 .or. size(M%M,4) < 3) return
