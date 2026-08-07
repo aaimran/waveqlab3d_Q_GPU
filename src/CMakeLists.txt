@@ -22,6 +22,7 @@ set(WQL3D_BACKEND_NAME "cpu")
 set(WQL3D_ACCELERATOR_RUNTIME accelerator_runtime_cpu.f90)
 set(WQL3D_DEVICE_DATA device_data_cpu.f90)
 set(WQL3D_RK_VECTOR_KERNELS rk_vector_cpu.f90)
+set(WQL3D_TRADITIONAL_CARTESIAN_RHS traditional_cartesian_rhs_cpu.f90)
 set(WQL3D_RK_VECTOR_TEST_DATA ../tests/rk_vector_test_data_cpu.f90)
 set(WQL3D_ALLOCATION_TRACKING allocation_tracking_disabled.f90)
 if(WQL3D_ENABLE_OPENACC)
@@ -30,6 +31,7 @@ if(WQL3D_ENABLE_OPENACC)
     set(WQL3D_ACCELERATOR_RUNTIME accelerator_runtime_openacc.f90)
     set(WQL3D_DEVICE_DATA device_data_openacc.f90)
     set(WQL3D_RK_VECTOR_KERNELS rk_vector_openacc.f90)
+    set(WQL3D_TRADITIONAL_CARTESIAN_RHS traditional_cartesian_rhs_openacc.f90)
     set(WQL3D_RK_VECTOR_TEST_DATA ../tests/rk_vector_test_data_openacc.f90)
 endif()
 
@@ -89,6 +91,7 @@ set(WQL3D_SRC
   persistent_memory.f90
   ${WQL3D_DEVICE_DATA}
   ${WQL3D_RK_VECTOR_KERNELS}
+  ${WQL3D_TRADITIONAL_CARTESIAN_RHS}
   domain.f90
   metrics.f90
   elastic.f90

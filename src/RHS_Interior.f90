@@ -17,6 +17,7 @@ contains
                               JJU_x4_interior_upwind_drp,JJU_x5_interior_upwind_drp,&
                               JJU_x6_interior_upwind_drp,JJU_x7_interior_upwind_drp,&
                               JJU_x66_interior_upwind_drp,JJU_x679_interior_upwind_drp
+    use traditional_cartesian_rhs_backend, only : try_traditional_cartesian_rhs
     implicit none
     
     !type(block_fields), intent(inout):: F
@@ -32,7 +33,8 @@ contains
        
     case('traditional')
        ! compute all spatial derivatives and add interior rates to rates array, no forcing
-       call JJU_x6_interior(F, G, M, type_of_mesh)
+       if (.not.try_traditional_cartesian_rhs(F, G, M, type_of_mesh)) &
+            call JJU_x6_interior(F, G, M, type_of_mesh)
        
        ! print *, 'interior'
        
