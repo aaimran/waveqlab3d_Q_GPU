@@ -14,7 +14,6 @@ contains
 
     use datatypes, only: block_type, block_grid_t, block_material
     use RHS_Interior, only : RHS_Center, RHS_near_boundaries
-    use traditional_cartesian_rhs_backend, only : traditional_cartesian_rhs_includes_boundaries
     implicit none
 
     type(block_type), intent(inout):: F
@@ -25,8 +24,7 @@ contains
 
     call RHS_Center(F, G, M, type_of_mesh)
 
-    if (.not.traditional_cartesian_rhs_includes_boundaries()) &
-         call RHS_Near_Boundaries(F, G, M)
+    call RHS_Near_Boundaries(F, G, M)
 
   end subroutine set_rates_elastic
 

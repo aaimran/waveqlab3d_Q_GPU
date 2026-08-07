@@ -3,7 +3,7 @@ module traditional_cartesian_rhs_backend
   use datatypes, only : block_type, block_grid_t, block_material
   implicit none
   private
-  public :: try_traditional_cartesian_rhs, traditional_cartesian_rhs_includes_boundaries
+  public :: try_traditional_cartesian_rhs
 contains
   subroutine try_traditional_cartesian_rhs(F, G, M, type_of_mesh, handled)
     type(block_type), intent(inout) :: F
@@ -13,8 +13,4 @@ contains
     logical, intent(out) :: handled
     handled = .false.
   end subroutine try_traditional_cartesian_rhs
-
-  logical function traditional_cartesian_rhs_includes_boundaries()
-    traditional_cartesian_rhs_includes_boundaries = .false.
-  end function traditional_cartesian_rhs_includes_boundaries
 end module traditional_cartesian_rhs_backend
