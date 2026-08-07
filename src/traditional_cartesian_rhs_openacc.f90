@@ -27,6 +27,16 @@ contains
     if (.not.allocated(F%F%F) .or. .not.allocated(F%F%DF) .or. &
         .not.allocated(G%metricx) .or. .not.allocated(G%metricy) .or. &
         .not.allocated(G%metricz) .or. .not.allocated(M%M)) return
+    if (environment_true('WQL3D_PHASE5_DIAGNOSTICS')) then
+      write(*,'(A,6(I0,1X))') 'Phase 5 field bounds: ', &
+           lbound(F%F%F,1), ubound(F%F%F,1), lbound(F%F%F,2), &
+           ubound(F%F%F,2), lbound(F%F%F,3), ubound(F%F%F,3)
+      write(*,'(A,9(I0,1X))') 'Phase 5 grid indices: ', G%C%mq, G%C%pq, &
+           G%C%mr, G%C%pr, G%C%ms, G%C%ps, G%C%nq, G%C%nr, G%C%ns
+      write(*,'(A,4(I0,1X))') 'Phase 5 field shape: ', shape(F%F%F)
+      write(*,'(A,4(I0,1X))') 'Phase 5 metric shape: ', shape(G%metricx)
+      write(*,'(A,4(I0,1X))') 'Phase 5 material shape: ', shape(M%M)
+    end if
     if (size(F%F%F,4) /= 9 .or. size(M%M,4) < 3) return
     if (any(shape(F%F%DF) /= shape(F%F%F))) return
     if (any(shape(G%metricx, kind=8) /= shape(G%metricy, kind=8)) .or. &
@@ -139,4 +149,14 @@ contains
       end do
     end do
   end subroutine cartesian_elastic_o6_interior_kernel
+
+  logical function environment_true(name)
+    character(*), intent(in) :: name
+    character(16) :: value
+    integer :: status
+    value = ''
+    call get_environment_variable(name, value, status=status)
+    environment_true = status == 0 .and. any(trim(adjustl(value)) == &
+         [character(len=5) :: '1', 'true', 'TRUE', 'yes', 'YES'])
+  end function environment_true
 end module traditional_cartesian_rhs_backend
