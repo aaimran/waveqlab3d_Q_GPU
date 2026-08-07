@@ -47,16 +47,28 @@ contains
       write(*,'(A,4(I0,1X))') 'Phase 5 material lower bounds: ', lbound(M%M)
     end if
     if (size(F%F%F,4) /= 9 .or. size(M%M,4) < 3) return
-    if (any(shape(F%F%DF) /= shape(F%F%F))) return
-    if (any(shape(G%metricx, kind=8) /= shape(G%metricy, kind=8)) .or. &
-        any(shape(G%metricx, kind=8) /= shape(G%metricz, kind=8))) return
+    if (size(F%F%DF,1) /= size(F%F%F,1) .or. &
+        size(F%F%DF,2) /= size(F%F%F,2) .or. &
+        size(F%F%DF,3) /= size(F%F%F,3) .or. &
+        size(F%F%DF,4) /= size(F%F%F,4)) return
+    if (size(G%metricx,1) /= size(G%metricy,1) .or. &
+        size(G%metricx,2) /= size(G%metricy,2) .or. &
+        size(G%metricx,3) /= size(G%metricy,3) .or. &
+        size(G%metricx,4) /= size(G%metricy,4)) return
+    if (size(G%metricx,1) /= size(G%metricz,1) .or. &
+        size(G%metricx,2) /= size(G%metricz,2) .or. &
+        size(G%metricx,3) /= size(G%metricz,3) .or. &
+        size(G%metricx,4) /= size(G%metricz,4)) return
     if (size(G%metricx,1) /= size(F%F%F,1) .or. &
         size(G%metricx,2) /= size(F%F%F,2) .or. &
         size(G%metricx,3) /= size(F%F%F,3)) return
     if (size(M%M,1) /= size(F%F%F,1) .or. &
         size(M%M,2) /= size(F%F%F,2) .or. &
         size(M%M,3) /= size(F%F%F,3)) return
-    if (any(lbound(F%F%DF) /= lbound(F%F%F))) return
+    if (lbound(F%F%DF,1) /= lbound(F%F%F,1) .or. &
+        lbound(F%F%DF,2) /= lbound(F%F%F,2) .or. &
+        lbound(F%F%DF,3) /= lbound(F%F%F,3) .or. &
+        lbound(F%F%DF,4) /= lbound(F%F%F,4)) return
     if (lbound(G%metricx,1) /= lbound(F%F%F,1) .or. &
         lbound(G%metricx,2) /= lbound(F%F%F,2) .or. &
         lbound(G%metricx,3) /= lbound(F%F%F,3)) return
