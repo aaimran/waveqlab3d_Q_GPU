@@ -7,6 +7,7 @@ module traditional_cartesian_rhs_backend
   public :: try_traditional_cartesian_rhs
 contains
   logical function try_traditional_cartesian_rhs(F, G, M, type_of_mesh)
+    use mpi3dbasic, only : nprocs
     type(block_type), intent(inout) :: F
     type(block_grid_t), intent(in) :: G
     type(block_material), intent(inout) :: M
@@ -15,6 +16,7 @@ contains
     integer(kind=8) :: field_bytes, metric_bytes, material_bytes
 
     try_traditional_cartesian_rhs = .false.
+    if (nprocs /= 1) return
     if (trim(type_of_mesh) /= 'cartesian') return
     if (trim(F%fd_type) /= 'traditional' .or. F%order /= 6) return
     if (M%anelastic .or. M%anelastic_Q .or. M%anelastic_Q8 .or. &
