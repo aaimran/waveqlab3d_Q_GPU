@@ -153,12 +153,10 @@ contains
   real(kind=wp) function boundary_derivative_x(f,n1,n2,n3,x,y,z,c)
     integer,intent(in)::n1,n2,n3,x,y,z,c
     real(kind=wp),intent(in)::f(n1,n2,n3,9)
-    integer::q,sample
+    integer::q
     boundary_derivative_x=0.0_wp
     do q=1,9
-      sample=q
-      if (x > n1-6) sample=n1-9+q
-      boundary_derivative_x=boundary_derivative_x+sbp6_weight(x,sample,n1)*f(sample,y,z,c)
+      boundary_derivative_x=boundary_derivative_x+sbp6_weight(x,q,n1)*f(q,y,z,c)
     end do
   end function boundary_derivative_x
 
@@ -166,12 +164,10 @@ contains
   real(kind=wp) function boundary_derivative_y(f,n1,n2,n3,x,y,z,c)
     integer,intent(in)::n1,n2,n3,x,y,z,c
     real(kind=wp),intent(in)::f(n1,n2,n3,9)
-    integer::q,sample
+    integer::q
     boundary_derivative_y=0.0_wp
     do q=1,9
-      sample=q
-      if (y > n2-6) sample=n2-9+q
-      boundary_derivative_y=boundary_derivative_y+sbp6_weight(y,sample,n2)*f(x,sample,z,c)
+      boundary_derivative_y=boundary_derivative_y+sbp6_weight(y,q,n2)*f(x,q,z,c)
     end do
   end function boundary_derivative_y
 
@@ -179,12 +175,10 @@ contains
   real(kind=wp) function boundary_derivative_z(f,n1,n2,n3,x,y,z,c)
     integer,intent(in)::n1,n2,n3,x,y,z,c
     real(kind=wp),intent(in)::f(n1,n2,n3,9)
-    integer::q,sample
+    integer::q
     boundary_derivative_z=0.0_wp
     do q=1,9
-      sample=q
-      if (z > n3-6) sample=n3-9+q
-      boundary_derivative_z=boundary_derivative_z+sbp6_weight(z,sample,n3)*f(x,y,sample,c)
+      boundary_derivative_z=boundary_derivative_z+sbp6_weight(z,q,n3)*f(x,y,q,c)
     end do
   end function boundary_derivative_z
 end module traditional_cartesian_rhs_backend
