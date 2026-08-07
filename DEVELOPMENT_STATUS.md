@@ -4,9 +4,9 @@ Last updated: 2026-08-06
 
 ## Current phase
 
-Phases 0-4 are complete and qualified with GNU and NVHPC. The low-risk RK rate
-scaling and state-update kernels now execute on H100. Phase 5, a narrow
-traditional Cartesian elastic RHS offload, is next.
+Phases 0-5 are complete and qualified with GNU and NVHPC. The RK vector kernels
+and the narrow one-rank traditional Cartesian elastic strict-interior RHS now
+execute on H100. Phase 6 boundary/SAT/PML expansion is next.
 
 ## Implemented
 
@@ -36,11 +36,13 @@ traditional Cartesian elastic RHS offload, is next.
   kernels, including attenuation and PML state.
 - An asymmetric numerical fixture and an NVHPC notification gate require the
   two named GPU kernels, exact expected results, and no implicit allocation.
+- The traditional order-6 Cartesian homogeneous elastic volume RHS has a
+  guarded one-rank OpenACC backend and a named-kernel execution oracle.
 
 ## Not implemented yet
 
-- Spatial RHS, boundary/interface, source, and MPI numerical work remains on
-  the host.
+- Traditional SBP near-boundary closures, SAT/interface, source, PML, alternate
+  spatial operators, and MPI numerical work remain on the host.
 - Phase 4's host RHS boundary requires five explicit synchronization sites;
   useful GPU performance is not yet expected.
 - CUDA-aware MPI has not been exercised; its option currently records intent.
@@ -48,12 +50,9 @@ traditional Cartesian elastic RHS offload, is next.
 
 ## Next gate
 
-1. Offload only the traditional order-6 Cartesian homogeneous elastic RHS for
-   one rank, one GPU, and one block.
-2. Exclude PML, attenuation, fault/interface, plasticity, and alternate
-   operator families from the first Phase 5 gate.
-3. Preserve the CPU oracle and validate receiver/final-state output before
-   widening the physics scope.
+1. Port traditional SBP near-boundary and SAT forcing with stage-level oracles.
+2. Add compact PML one face at a time before edges and corners.
+3. Preserve the CPU oracle and keep host/device transfers explicit and audited.
 4. Keep CUDA-aware MPI disabled.
 
 ## Local verification

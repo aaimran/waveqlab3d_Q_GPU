@@ -3,7 +3,7 @@
 Date: 2026-08-06  
 Repository: `/scratch/aimran/waveqlab3d_Q_GPU`  
 Branch: `main`  
-Handoff baseline: Phase 4 implementation through `539d5d2`
+Handoff baseline: Phase 5 implementation through `3c275c9`
 
 ## Purpose of this document
 
@@ -48,13 +48,15 @@ the CPU solver as the numerical oracle throughout the migration.
    - Explicit leaf residency, host update, transfer, memory, and cleanup gates.
 6. `PHASE4_RK_VECTOR_KERNELS.md`
    - RK backend, explicit hybrid bridge, launch evidence, and qualification.
-7. `ACCELERATOR_RUNTIME.md`
+7. `PHASE5_TRADITIONAL_CARTESIAN_RHS.md`
+   - Qualified RHS scope, fallback, sanitizer, transfer, and timing evidence.
+8. `ACCELERATOR_RUNTIME.md`
    - Local-rank discovery, H100 binding, and oversubscription rules.
-8. `NVHPC_shutdown_regression_fix.md`
+9. `NVHPC_shutdown_regression_fix.md`
    - Important NVHPC optional-argument correctness fix.
-9. `punakha_nvdia_install.md`
+10. `punakha_nvdia_install.md`
    - Actual local NVHPC 26.5 installation and home-quota workaround.
-10. `CMakePresets.json` and `src/CMakeLists.txt`
+11. `CMakePresets.json` and `src/CMakeLists.txt`
    - Current build variants and source ordering.
 
 Do not rely only on older “Next gate” prose near the top of
@@ -148,7 +150,7 @@ kernel timings.
 
 ## Current exact status
 
-Phases 0-4 are complete. Phase 4 routes all 49 rate-scale and 49 state-update
+Phases 0-5 are complete. Phase 4 routes all 49 rate-scale and 49 state-update
 sites through CPU/OpenACC backends. The asymmetric unit oracle reports zero
 error, and the launch gate proves both named kernels execute on H100 without
 implicit allocation. Focused H100 coverage passed 12/12 in 116.36 s; CPU
@@ -157,12 +159,16 @@ oracle coverage passed 8/8 in 29.60 s.
 The spatial RHS and MPI paths remain on the host. Five explicit transfer sites
 form the temporary Phase 4 synchronization bridge, producing 150 transfers in
 the qualified 30-stage elastic run. This is correctness-qualified GPU
-execution, not yet a performance result. Phase 5 is next.
+execution, not yet a performance result. Phase 5 adds the guarded one-rank
+traditional Cartesian homogeneous elastic strict-interior RHS kernel. It
+launches 30 times in the six-step oracle, matches `max|field|=1.6623E+02`, and
+passes Compute Sanitizer with zero errors. The host near-boundary/SAT/source
+bridge remains explicit. Phase 6 is next.
 
 ## Exact next implementation task
 
-Offload the narrowest Phase 5 spatial RHS path without changing numerical
-results.
+Port the Phase 6 traditional boundary/SAT path without changing numerical
+results, then expand compact PML one topology at a time.
 
 Recommended safe design:
 
