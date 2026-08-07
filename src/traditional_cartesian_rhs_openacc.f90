@@ -15,7 +15,7 @@ contains
     character(len=*), intent(in) :: type_of_mesh
     logical, intent(out) :: handled
     integer :: n1, n2, n3
-    integer(kind=8) :: field_bytes, metric_bytes, material_bytes
+    integer(kind=8) :: field_bytes, metric_bytes, material_bytes, jacobian_bytes
 
     handled = .false.
     boundaries_completed = .false.
@@ -33,16 +33,18 @@ contains
     field_bytes = int(size(F%F%F),8)*int(storage_size(0.0_wp)/8,8)
     metric_bytes = int(size(G%metricx),8)*int(storage_size(0.0_wp)/8,8)
     material_bytes = int(size(M%M),8)*int(storage_size(0.0_wp)/8,8)
+    jacobian_bytes = int(size(G%J),8)*int(storage_size(0.0_wp)/8,8)
     if (.not.acc_is_present(F%F%F, field_bytes) .or. &
         .not.acc_is_present(F%F%DF, field_bytes) .or. &
         .not.acc_is_present(G%metricx, metric_bytes) .or. &
         .not.acc_is_present(G%metricy, metric_bytes) .or. &
         .not.acc_is_present(G%metricz, metric_bytes) .or. &
+        .not.acc_is_present(G%J, jacobian_bytes) .or. &
         .not.acc_is_present(M%M, material_bytes)) &
       error stop 'Phase 5 Cartesian RHS arrays are not present on device'
 
     call cartesian_elastic_o6_interior_kernel(F%F%F, F%F%DF, G%metricx, &
-         G%metricy, G%metricz, M%M, n1, n2, n3, size(G%metricx,4), &
+         G%metricy, G%metricz, G%J, M%M, n1, n2, n3, size(G%metricx,4), &
          size(M%M,4), G%hq, G%hr, G%hs)
     !$acc update self(F%F%DF)
     handled = .true.
@@ -55,20 +57,21 @@ contains
   end function traditional_cartesian_rhs_includes_boundaries
 
   subroutine cartesian_elastic_o6_interior_kernel(field, rate, metricx, &
-       metricy, metricz, material, n1, n2, n3, nm, nmat, hq, hr, hs)
+       metricy, metricz, jacobian, material, n1, n2, n3, nm, nmat, hq, hr, hs)
     integer, intent(in) :: n1, n2, n3, nm, nmat
     real(kind=wp), intent(in) :: field(n1,n2,n3,9)
     real(kind=wp), intent(inout) :: rate(n1,n2,n3,9)
     real(kind=wp), intent(in) :: metricx(n1,n2,n3,nm)
     real(kind=wp), intent(in) :: metricy(n1,n2,n3,nm)
     real(kind=wp), intent(in) :: metricz(n1,n2,n3,nm)
+    real(kind=wp), intent(in) :: jacobian(n1,n2,n3)
     real(kind=wp), intent(in) :: material(n1,n2,n3,nmat)
     real(kind=wp), intent(in) :: hq, hr, hs
     integer :: x, y, z, s, component
     real(kind=wp) :: dfx(9), dfy(9), dfz(9), cx, cy, cz
     real(kind=wp) :: a1, a2, a3, a4, coefficient
 
-    !$acc parallel loop gang vector collapse(3) present(field,rate,metricx,metricy,metricz,material) &
+    !$acc parallel loop gang vector collapse(3) present(field,rate,metricx,metricy,metricz,jacobian,material) &
     !$acc& private(dfx,dfy,dfz,cx,cy,cz,a1,a2,a3,a4,coefficient,s,component)
     do z = 1, n3
       do y = 1, n2
@@ -95,18 +98,27 @@ contains
             end do
           end do
           if (x <= 6 .or. x > n1-6) then
-            do component=1,9
+            do component=1,3
               dfx(component)=metricx(x,y,z,1)*boundary_derivative_x(field,n1,n2,n3,x,y,z,component)/hq
+            end do
+            do component=4,9
+              dfx(component)=boundary_conservative_x(field,metricx,jacobian,n1,n2,n3,nm,x,y,z,component)/hq
             end do
           end if
           if (y <= 6 .or. y > n2-6) then
-            do component=1,9
+            do component=1,3
               dfy(component)=metricy(x,y,z,2)*boundary_derivative_y(field,n1,n2,n3,x,y,z,component)/hr
+            end do
+            do component=4,9
+              dfy(component)=boundary_conservative_y(field,metricy,jacobian,n1,n2,n3,nm,x,y,z,component)/hr
             end do
           end if
           if (z <= 6 .or. z > n3-6) then
-            do component=1,9
+            do component=1,3
               dfz(component)=metricz(x,y,z,3)*boundary_derivative_z(field,n1,n2,n3,x,y,z,component)/hs
+            end do
+            do component=4,9
+              dfz(component)=boundary_conservative_z(field,metricz,jacobian,n1,n2,n3,nm,x,y,z,component)/hs
             end do
           end if
           a1 = 1.0_wp/material(x,y,z,3)
@@ -187,4 +199,40 @@ contains
       boundary_derivative_z=boundary_derivative_z+sbp6_weight(z,sample,n3)*f(x,y,sample,c)
     end do
   end function boundary_derivative_z
+
+  !$acc routine seq
+  real(kind=wp) function boundary_conservative_x(f,m,j,n1,n2,n3,nm,x,y,z,c)
+    integer,intent(in)::n1,n2,n3,nm,x,y,z,c
+    real(kind=wp),intent(in)::f(n1,n2,n3,9),m(n1,n2,n3,nm),j(n1,n2,n3)
+    integer::q,sample
+    boundary_conservative_x=0.0_wp
+    do q=1,9
+      sample=q; if(x>n1-6) sample=n1-9+q
+      boundary_conservative_x=boundary_conservative_x+sbp6_weight(x,sample,n1)*f(sample,y,z,c)*j(sample,y,z)*m(sample,y,z,1)
+    end do
+  end function boundary_conservative_x
+
+  !$acc routine seq
+  real(kind=wp) function boundary_conservative_y(f,m,j,n1,n2,n3,nm,x,y,z,c)
+    integer,intent(in)::n1,n2,n3,nm,x,y,z,c
+    real(kind=wp),intent(in)::f(n1,n2,n3,9),m(n1,n2,n3,nm),j(n1,n2,n3)
+    integer::q,sample
+    boundary_conservative_y=0.0_wp
+    do q=1,9
+      sample=q; if(y>n2-6) sample=n2-9+q
+      boundary_conservative_y=boundary_conservative_y+sbp6_weight(y,sample,n2)*f(x,sample,z,c)*j(x,sample,z)*m(x,sample,z,2)
+    end do
+  end function boundary_conservative_y
+
+  !$acc routine seq
+  real(kind=wp) function boundary_conservative_z(f,m,j,n1,n2,n3,nm,x,y,z,c)
+    integer,intent(in)::n1,n2,n3,nm,x,y,z,c
+    real(kind=wp),intent(in)::f(n1,n2,n3,9),m(n1,n2,n3,nm),j(n1,n2,n3)
+    integer::q,sample
+    boundary_conservative_z=0.0_wp
+    do q=1,9
+      sample=q; if(z>n3-6) sample=n3-9+q
+      boundary_conservative_z=boundary_conservative_z+sbp6_weight(z,sample,n3)*f(x,y,sample,c)*j(x,y,sample)*m(x,y,sample,3)
+    end do
+  end function boundary_conservative_z
 end module traditional_cartesian_rhs_backend
