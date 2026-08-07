@@ -187,6 +187,10 @@ add_test(NAME rk_vector_kernel_unit COMMAND $<TARGET_FILE:rk_vector_kernel_test>
 if(WQL3D_ENABLE_OPENACC)
   add_executable(openacc_runtime_probe ../tests/openacc_runtime_probe.f90)
   add_test(NAME openacc_runtime_probe COMMAND $<TARGET_FILE:openacc_runtime_probe>)
+  add_test(NAME rk_vector_kernel_launch
+    COMMAND ${CMAKE_COMMAND}
+      -D EXE=$<TARGET_FILE:rk_vector_kernel_test>
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/run_rk_vector_launch.cmake)
 endif()
 
 # Intel MPI's mpirun wrapper supplies its runtime-library environment, while
