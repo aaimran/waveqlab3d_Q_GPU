@@ -1,0 +1,16 @@
+execute_process(
+  COMMAND ${MPIEXEC} -n 1 ${CMAKE_COMMAND} -E env WQL3D_PHASE6_DIAGNOSTICS=1 ${EXE} ${INPUT}
+  RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE error)
+set(combined "${output}\n${error}")
+if(NOT result EQUAL 0)
+  message(FATAL_ERROR "Phase 6 Lx run failed (${result}):\n${combined}")
+endif()
+string(REGEX MATCHALL "Phase 6 Lx launch:" launches "${combined}")
+list(LENGTH launches count)
+if(NOT count EQUAL 1)
+  message(FATAL_ERROR "Expected one Phase 6 Lx launch report, found ${count}:\n${combined}")
+endif()
+string(FIND "${combined}" "Final state diagnostics:" final_state)
+if(final_state EQUAL -1)
+  message(FATAL_ERROR "Phase 6 final-state oracle is missing:\n${combined}")
+endif()

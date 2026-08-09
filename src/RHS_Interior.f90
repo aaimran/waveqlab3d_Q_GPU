@@ -1585,6 +1585,7 @@ if (F%order .eq. 7) then
 
     use datatypes, only : block_type, mms_type, boundary_type, block_material
     use BoundaryConditions, only : BC_Lx, BC_Ly, BC_Lz, BC_Rx, BC_Ry, BC_Rz
+    use traditional_boundary_backend, only : try_traditional_lx_boundary
 
     implicit none
 
@@ -1593,12 +1594,16 @@ if (F%order .eq. 7) then
     real(kind = wp), intent(in) :: t                                         ! time
 
     integer :: mx, my, mz, px, py, pz, n
+    logical :: accelerator_handled
     type(boundary_type) :: boundary_vars
     real(kind = wp) :: rho, mu, lam, tau0, hx, hy, hz                          ! penalty the in x-direction, y-direction, z-direction
 
     real(kind = wp) :: U_x(9), U_y(9), U_z(9)     ! to hold boundary forcing
     
     integer :: x, y, z
+
+    call try_traditional_lx_boundary(B, mms_vars, accelerator_handled)
+    if (accelerator_handled) return
 
     boundary_vars = B%boundary_vars
     tau0 = B%tau0

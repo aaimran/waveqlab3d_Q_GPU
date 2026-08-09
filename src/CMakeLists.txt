@@ -23,6 +23,7 @@ set(WQL3D_ACCELERATOR_RUNTIME accelerator_runtime_cpu.f90)
 set(WQL3D_DEVICE_DATA device_data_cpu.f90)
 set(WQL3D_RK_VECTOR_KERNELS rk_vector_cpu.f90)
 set(WQL3D_TRADITIONAL_CARTESIAN_RHS traditional_cartesian_rhs_cpu.f90)
+set(WQL3D_TRADITIONAL_BOUNDARY traditional_boundary_cpu.f90)
 set(WQL3D_RK_VECTOR_TEST_DATA ../tests/rk_vector_test_data_cpu.f90)
 set(WQL3D_ALLOCATION_TRACKING allocation_tracking_disabled.f90)
 if(WQL3D_ENABLE_OPENACC)
@@ -32,6 +33,7 @@ if(WQL3D_ENABLE_OPENACC)
     set(WQL3D_DEVICE_DATA device_data_openacc.f90)
     set(WQL3D_RK_VECTOR_KERNELS rk_vector_openacc.f90)
     set(WQL3D_TRADITIONAL_CARTESIAN_RHS traditional_cartesian_rhs_openacc.f90)
+    set(WQL3D_TRADITIONAL_BOUNDARY traditional_boundary_openacc.f90)
     set(WQL3D_RK_VECTOR_TEST_DATA ../tests/rk_vector_test_data_openacc.f90)
 endif()
 
@@ -92,6 +94,7 @@ set(WQL3D_SRC
   ${WQL3D_DEVICE_DATA}
   ${WQL3D_RK_VECTOR_KERNELS}
   ${WQL3D_TRADITIONAL_CARTESIAN_RHS}
+  ${WQL3D_TRADITIONAL_BOUNDARY}
   domain.f90
   metrics.f90
   elastic.f90
@@ -214,6 +217,12 @@ if(WQL3D_ENABLE_OPENACC)
       -D EXE=$<TARGET_FILE:waveqlab3d>
       -D INPUT=${CMAKE_CURRENT_SOURCE_DIR}/../inputfile/test_elastic_traditional_o6.in
       -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/run_phase5_rhs_launch.cmake)
+  add_test(NAME phase6_lx_boundary_launch
+    COMMAND ${CMAKE_COMMAND}
+      -D MPIEXEC=${WQL3D_MPI_RUNNER}
+      -D EXE=$<TARGET_FILE:waveqlab3d>
+      -D INPUT=${CMAKE_CURRENT_SOURCE_DIR}/../inputfile/test_elastic_traditional_o6_lx.in
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/run_phase6_lx_launch.cmake)
   foreach(fallback_case IN ITEMS
       test_elastic_upwind_o6.in
       test_anelastic_Q8_dynamic.in)
