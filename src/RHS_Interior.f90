@@ -144,6 +144,7 @@ contains
                               JJU_x4_upwind_drp,JJU_x5_upwind_drp,&
                               JJU_x6_upwind_drp,JJU_x7_upwind_drp, &
                               JJU_x66_upwind_drp,JJU_x679_upwind_drp
+    use traditional_boundary_rhs_backend, only : try_traditional_boundary_rhs
 
     implicit none
 
@@ -162,6 +163,7 @@ contains
      integer :: x, y, z
     real(kind = wp) :: rhoJ_inv, lambda2mu
     integer :: ix, iy, iz,  fx, fy, fz
+    logical :: accelerator_handled
     
     
     ! compute all spatial derivatives and add interior rates to rates array, no forcing
@@ -218,6 +220,9 @@ contains
      
 
     case('traditional')
+
+    call try_traditional_boundary_rhs(F,G,M,accelerator_handled)
+    if (accelerator_handled) return
 
     !print *, 'traditional'
     
