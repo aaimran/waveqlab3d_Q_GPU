@@ -4,7 +4,8 @@ module fields
 
   use common, only : wp
   use datatypes, only : block_type, block_fields
-  use rk_vector_kernels, only : scale_rate_array, update_state_array
+  use rk_vector_kernels, only : scale_rate_array, update_state_array, &
+       scale_rate_array_resident, update_state_array_resident
    use, intrinsic :: ieee_arithmetic
   implicit none
 
@@ -116,38 +117,38 @@ contains
 
     if( F%PMLB(1)%pml .EQV. .TRUE.) then
        if(F%G%C%mq .le.  F%PMLB(1)%N_pml) then
-          call scale_rate_array(F%PMLB(1)%DQ, A)
+          call scale_rate_array_resident(F%PMLB(1)%DQ, A)
        end if
     end if
 
     
     if( F%PMLB(2)%pml .EQV. .TRUE.) then
         if(F%G%C%pq .ge. (F%G%C%nq- F%PMLB(2)%N_pml+1)) then
-           call scale_rate_array(F%PMLB(2)%DQ, A)
+           call scale_rate_array_resident(F%PMLB(2)%DQ, A)
         end if
      end if
      
      if( F%PMLB(3)%pml .EQV. .TRUE.) then
         if(F%G%C%mr .le. F%PMLB(3)%N_pml) then
-           call scale_rate_array(F%PMLB(3)%DQ, A)
+           call scale_rate_array_resident(F%PMLB(3)%DQ, A)
         end if
      end if
      
      if( F%PMLB(4)%pml .EQV. .TRUE.) then
          if(F%G%C%pr .ge. (F%G%C%nr- F%PMLB(4)%N_pml+1)) then
-            call scale_rate_array(F%PMLB(4)%DQ, A)
+           call scale_rate_array_resident(F%PMLB(4)%DQ, A)
          end if
      end if
      
      if( F%PMLB(5)%pml .EQV. .TRUE.) then
         if(F%G%C%ms .le.  F%PMLB(5)%N_pml) then
-           call scale_rate_array(F%PMLB(5)%DQ, A)
+           call scale_rate_array_resident(F%PMLB(5)%DQ, A)
         end if
      end if
      
      if( F%PMLB(6)%pml .EQV. .TRUE.) then
          if(F%G%C%ps .ge. (F%G%C%ns- F%PMLB(6)%N_pml+1)) then
-            call scale_rate_array(F%PMLB(6)%DQ, A)
+           call scale_rate_array_resident(F%PMLB(6)%DQ, A)
          end if
      end if
      
@@ -222,38 +223,38 @@ contains
 
     if( F%PMLB(1)%pml .EQV. .TRUE.) then
        if(F%G%C%mq .le. F%PMLB(1)%N_pml) then
-         call update_state_array(F%PMLB(1)%Q, F%PMLB(1)%DQ, dt)
+         call update_state_array_resident(F%PMLB(1)%Q, F%PMLB(1)%DQ, dt)
        end if
     end if
 
     
     if( F%PMLB(2)%pml .EQV. .TRUE.) then
         if(F%G%C%pq .ge. (F%G%C%nq- F%PMLB(2)%N_pml+1)) then
-          call update_state_array(F%PMLB(2)%Q, F%PMLB(2)%DQ, dt)
+          call update_state_array_resident(F%PMLB(2)%Q, F%PMLB(2)%DQ, dt)
         end if
      end if
      
      if( F%PMLB(3)%pml .EQV. .TRUE.) then
         if(F%G%C%mr .le.  F%PMLB(3)%N_pml) then
-           call update_state_array(F%PMLB(3)%Q, F%PMLB(3)%DQ, dt)
+          call update_state_array_resident(F%PMLB(3)%Q, F%PMLB(3)%DQ, dt)
         end if
      end if
      
      if( F%PMLB(4)%pml .EQV. .TRUE.) then
          if(F%G%C%pr .ge. (F%G%C%nr- F%PMLB(4)%N_pml+1)) then
-            call update_state_array(F%PMLB(4)%Q, F%PMLB(4)%DQ, dt)
+          call update_state_array_resident(F%PMLB(4)%Q, F%PMLB(4)%DQ, dt)
          end if
      end if
      
      if( F%PMLB(5)%pml .EQV. .TRUE.) then
         if(F%G%C%ms .le.  F%PMLB(5)%N_pml) then
-           call update_state_array(F%PMLB(5)%Q, F%PMLB(5)%DQ, dt)
+          call update_state_array_resident(F%PMLB(5)%Q, F%PMLB(5)%DQ, dt)
         end if
      end if
      
      if( F%PMLB(6)%pml .EQV. .TRUE.) then
          if(F%G%C%ps .ge. (F%G%C%ns- F%PMLB(6)%N_pml+1)) then
-            call update_state_array(F%PMLB(6)%Q, F%PMLB(6)%DQ, dt)
+          call update_state_array_resident(F%PMLB(6)%Q, F%PMLB(6)%DQ, dt)
          end if
      end if
 

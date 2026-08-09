@@ -133,7 +133,6 @@ contains
          size(P%Q,1),size(P%Q,2),size(P%Q,3),G%C%nq,G%C%nr,G%C%ns, &
          1-lbound(F%F%F,1)+1,1-lbound(F%F%F,2)+1,1-lbound(F%F%F,3)+1, &
          lbound(P%Q,1),lbound(P%Q,2),lbound(P%Q,3),P%N_pml,direction,side,G%hq,G%hr,G%hs)
-    !$acc update self(P%DQ,F%F%DF)
   end subroutine launch_pml
 
   subroutine pml_face_kernel(field,rate,mat,jac,mx,my,mz,q,dq,n1,n2,n3,nmat,nmet, &

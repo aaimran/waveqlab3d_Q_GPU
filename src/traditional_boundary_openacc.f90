@@ -187,7 +187,6 @@ contains
     call pml_sat_kernel(P%DQ,work,size(P%DQ,1),size(P%DQ,2),size(P%DQ,3), &
          na,nb,lbound(P%DQ,1),lbound(P%DQ,2),lbound(P%DQ,3), &
          direction,fixed,a0,b0,penalty)
-    !$acc update self(P%DQ)
   end subroutine pml_sat_face
 
   subroutine pml_sat_kernel(dq,work,n1,n2,n3,na,nb,l1,l2,l3,direction,fixed,a0,b0,penalty)
