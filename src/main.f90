@@ -171,6 +171,9 @@ program main
 
   call end_timestep_allocation_tracking()
 
+  ! Recover the authoritative resident state once, after the timestep loop,
+  ! before device mappings are deleted and shutdown diagnostics are formed.
+  call update_domain_host_data(D)
   call assert_domain_device_data_present(D)
   call exit_domain_device_data(D)
   call close_domain(D)
