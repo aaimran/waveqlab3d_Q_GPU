@@ -2,14 +2,15 @@
 
 ## Status
 
-Phase 6A has started with the deliberately narrow one-rank, one-block,
-traditional order-6 Cartesian `Lx` characteristic boundary.  Boundary forcing
+Phase 6A now covers all six one-rank, one-block, traditional order-6 Cartesian
+physical faces. Boundary forcing
 preparation and the SAT rate addition execute in one face-local OpenACC kernel.
-The physical `41 x 41` face is translated through the `-2:44` ghost-backed
-normal storage; the qualified launch uses 14 gangs and vector length 128.
+Each physical `41 x 41` face is translated through the `-2:44` ghost-backed
+normal storage; each qualified launch uses 14 gangs and vector length 128.
+The all-face test requires 180 named launches (six faces across 30 RK stages).
 
 The backend preserves the CPU implementation as an explicit fallback.  It
-declines MMS, PML, multiple active physical faces, multiple ranks, other finite
+declines MMS, multiple ranks, other finite
 difference families/orders, unexpected component counts, invalid face/storage
 shapes, and absent allocations.  Device presence is checked before launch.
 

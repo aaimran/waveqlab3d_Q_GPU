@@ -223,6 +223,12 @@ if(WQL3D_ENABLE_OPENACC)
       -D EXE=$<TARGET_FILE:waveqlab3d>
       -D INPUT=${CMAKE_CURRENT_SOURCE_DIR}/../inputfile/test_elastic_traditional_o6_lx.in
       -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/run_phase6_lx_launch.cmake)
+  add_test(NAME phase6_all_face_boundary_launches
+    COMMAND ${CMAKE_COMMAND}
+      -D MPIEXEC=${WQL3D_MPI_RUNNER}
+      -D EXE=$<TARGET_FILE:waveqlab3d>
+      -D INPUT=${CMAKE_CURRENT_SOURCE_DIR}/../inputfile/test_elastic_traditional_o6.in
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/run_phase6_all_faces.cmake)
   foreach(fallback_case IN ITEMS
       test_elastic_upwind_o6.in
       test_anelastic_Q8_dynamic.in)
