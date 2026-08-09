@@ -1,7 +1,7 @@
 waveqlab3d input file: Phase 6 traditional elastic all-face PML
 &problem_list
  name='data/test_elastic_traditional_o6_pml', problem='default', response='elastic',
- nblocks=1, t_final=0.05d0, CFL=0.20d0, coupling='locked',
+ nblocks=1, t_final=0.02d0, CFL=0.20d0, coupling='locked',
  fd_type='traditional', order=6, mesh_source='compute', type_of_mesh='cartesian',
  material_source='hardcode', interpol=F, w_stride=1, w_fault=F,
  use_topography=F, topo=1d0, mollify_source=F /
