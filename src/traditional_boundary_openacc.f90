@@ -47,12 +47,15 @@ contains
     ix = mx-lbound(B%F%F,1)+1
     n1 = size(B%F%F,1); n2 = size(B%F%F,2); n3 = size(B%F%F,3)
     if (ix < 1 .or. ix > n1) return
-    if (size(B%B(1)%n_l,1) /= py-my+1 .or. size(B%B(1)%n_l,2) /= pz-mz+1) return
     if (any(shape(B%B(1)%n_m) /= shape(B%B(1)%n_l)) .or. &
         any(shape(B%B(1)%n_n) /= shape(B%B(1)%n_l))) return
     if (size(B%work_boundary_q,1) /= py-my+1 .or. &
         size(B%work_boundary_q,2) /= pz-mz+1 .or. &
         size(B%work_boundary_q,3) /= 9) return
+    if (my-lbound(B%B(1)%n_l,1)+1 < 1 .or. &
+        my-lbound(B%B(1)%n_l,1)+py-my+1 > size(B%B(1)%n_l,1) .or. &
+        mz-lbound(B%B(1)%n_l,2)+1 < 1 .or. &
+        mz-lbound(B%B(1)%n_l,2)+pz-mz+1 > size(B%B(1)%n_l,2)) return
 
     field_bytes = int(size(B%F%F),8)*int(storage_size(0.0_wp)/8,8)
     metric_bytes = int(size(B%G%metricx),8)*int(storage_size(0.0_wp)/8,8)
@@ -72,8 +75,10 @@ contains
     !$acc update device(B%F%F,B%F%DF)
     call lx_boundary_kernel(B%F%F,B%F%DF,B%M%M,B%G%metricx, &
          B%B(1)%n_l,B%B(1)%n_m,B%B(1)%n_n,B%work_boundary_q, &
-         n1,n2,n3,size(B%M%M,4),size(B%G%metricx,4),py-my+1,pz-mz+1, &
+         n1,n2,n3,size(B%M%M,4),size(B%G%metricx,4), &
+         size(B%B(1)%n_l,1),size(B%B(1)%n_l,2),py-my+1,pz-mz+1, &
          ix,my-lbound(B%F%F,2)+1,mz-lbound(B%F%F,3)+1, &
+         my-lbound(B%B(1)%n_l,1)+1,mz-lbound(B%B(1)%n_l,2)+1, &
          B%boundary_vars%Lx,B%tau0/B%G%hq)
     !$acc update self(B%F%DF,B%work_boundary_q)
     if (environment_true('WQL3D_PHASE6_DIAGNOSTICS') .and. .not.launch_reported) then
@@ -85,11 +90,12 @@ contains
   end subroutine try_traditional_lx_boundary
 
   subroutine lx_boundary_kernel(field,rate,material,metricx,nl,nm,nn,work, &
-       n1,n2,n3,nmat,nmetric,ny,nz,ix,iy0,iz0,bc_type,penalty)
-    integer,intent(in) :: n1,n2,n3,nmat,nmetric,ny,nz,ix,iy0,iz0,bc_type
+       n1,n2,n3,nmat,nmetric,nly,nlz,ny,nz,ix,iy0,iz0,jy0,jz0,bc_type,penalty)
+    integer,intent(in) :: n1,n2,n3,nmat,nmetric,nly,nlz,ny,nz
+    integer,intent(in) :: ix,iy0,iz0,jy0,jz0,bc_type
     real(kind=wp),intent(in) :: field(n1,n2,n3,9),material(n1,n2,n3,nmat)
     real(kind=wp),intent(in) :: metricx(n1,n2,n3,nmetric)
-    real(kind=wp),intent(in) :: nl(ny,nz,3),nm(ny,nz,3),nn(ny,nz,3)
+    real(kind=wp),intent(in) :: nl(nly,nlz,3),nm(nly,nlz,3),nn(nly,nlz,3)
     real(kind=wp),intent(inout) :: rate(n1,n2,n3,9),work(ny,nz,9)
     real(kind=wp),intent(in) :: penalty
     integer :: iy,iz,j,k
@@ -103,7 +109,8 @@ contains
     do k=1,nz
       do j=1,ny
         iy=iy0+j-1; iz=iz0+k-1
-        u=field(ix,iy,iz,:); l=nl(j,k,:); m=nm(j,k,:); nv=nn(j,k,:)
+        u=field(ix,iy,iz,:); l=nl(jy0+j-1,jz0+k-1,:)
+        m=nm(jy0+j-1,jz0+k-1,:); nv=nn(jy0+j-1,jz0+k-1,:)
         rho=material(ix,iy,iz,3); mu=material(ix,iy,iz,2); lam=material(ix,iy,iz,1)
         cp=sqrt((2.0_wp*mu+lam)/rho); cs=sqrt(mu/rho); zp=rho*cp; zs=rho*cs
         norm=sqrt(metricx(ix,iy,iz,1)**2+metricx(ix,iy,iz,2)**2+metricx(ix,iy,iz,3)**2)
