@@ -1,6 +1,6 @@
 module traditional_boundary_backend
   use common, only : wp
-  use datatypes, only : block_type, mms_type
+  use datatypes, only : block_type, mms_type, block_pml
   use openacc
   implicit none
   private
@@ -26,7 +26,6 @@ contains
     end if
     if (nprocs /= 1 .or. mms_vars%use_mms) return
     if (trim(B%fd_type) /= 'traditional' .or. B%order /= 6) return
-    if (any(B%PMLB(:)%pml)) return
     bcs=(/B%boundary_vars%Lx,B%boundary_vars%Rx,B%boundary_vars%Ly, &
         B%boundary_vars%Ry,B%boundary_vars%Lz,B%boundary_vars%Rz/)
     if (all(bcs <= 0)) return
@@ -94,6 +93,7 @@ contains
          ix,my-lbound(B%F%F,2)+1,mz-lbound(B%F%F,3)+1, &
          my-lbound(B%B(1)%n_l,1)+1,mz-lbound(B%B(1)%n_l,2)+1, &
          1,B%boundary_vars%Lx,-1.0_wp,B%tau0/B%G%hq)
+      if (allocated(B%PMLB(1)%DQ)) call pml_sat_face(B%PMLB(1),B%work_boundary_q,1,mx,my,mz,py-my+1,pz-mz+1,B%tau0/B%G%hq)
     end if
     if (B%boundary_vars%Rx > 0) then
       face_bytes = int(size(B%B(2)%n_l),8)*int(storage_size(0.0_wp)/8,8)
@@ -107,11 +107,24 @@ contains
          px-lbound(B%F%F,1)+1,my-lbound(B%F%F,2)+1,mz-lbound(B%F%F,3)+1, &
          my-lbound(B%B(2)%n_l,1)+1,mz-lbound(B%B(2)%n_l,2)+1, &
          1,B%boundary_vars%Rx,1.0_wp,B%tau0/B%G%hq)
+      if (allocated(B%PMLB(2)%DQ)) call pml_sat_face(B%PMLB(2),B%work_boundary_q,1,px,my,mz,py-my+1,pz-mz+1,B%tau0/B%G%hq)
     end if
-    if (B%boundary_vars%Ly > 0) call launch_y_face(B,3,my,-1.0_wp,B%boundary_vars%Ly)
-    if (B%boundary_vars%Ry > 0) call launch_y_face(B,4,py, 1.0_wp,B%boundary_vars%Ry)
-    if (B%boundary_vars%Lz > 0) call launch_z_face(B,5,mz,-1.0_wp,B%boundary_vars%Lz)
-    if (B%boundary_vars%Rz > 0) call launch_z_face(B,6,pz, 1.0_wp,B%boundary_vars%Rz)
+    if (B%boundary_vars%Ly > 0) then
+      call launch_y_face(B,3,my,-1.0_wp,B%boundary_vars%Ly)
+      if (allocated(B%PMLB(3)%DQ)) call pml_sat_face(B%PMLB(3),B%work_boundary_r,2,my,mx,mz,px-mx+1,pz-mz+1,B%tau0/B%G%hr)
+    end if
+    if (B%boundary_vars%Ry > 0) then
+      call launch_y_face(B,4,py,1.0_wp,B%boundary_vars%Ry)
+      if (allocated(B%PMLB(4)%DQ)) call pml_sat_face(B%PMLB(4),B%work_boundary_r,2,py,mx,mz,px-mx+1,pz-mz+1,B%tau0/B%G%hr)
+    end if
+    if (B%boundary_vars%Lz > 0) then
+      call launch_z_face(B,5,mz,-1.0_wp,B%boundary_vars%Lz)
+      if (allocated(B%PMLB(5)%DQ)) call pml_sat_face(B%PMLB(5),B%work_boundary_s,3,mz,mx,my,px-mx+1,py-my+1,B%tau0/B%G%hs)
+    end if
+    if (B%boundary_vars%Rz > 0) then
+      call launch_z_face(B,6,pz,1.0_wp,B%boundary_vars%Rz)
+      if (allocated(B%PMLB(6)%DQ)) call pml_sat_face(B%PMLB(6),B%work_boundary_s,3,pz,mx,my,px-mx+1,py-my+1,B%tau0/B%G%hs)
+    end if
     !$acc update self(B%F%DF,B%work_boundary_q,B%work_boundary_r,B%work_boundary_s)
     if (environment_true('WQL3D_PHASE6_DIAGNOSTICS') .and. .not.launch_reported) then
       write(*,'(A,I0,A,I0,A,2(I0,1X))') 'Phase 6 x-face launch: ny=',py-my+1, &
@@ -162,6 +175,38 @@ contains
          mx-lbound(B%B(face)%n_l,1)+1,my-lbound(B%B(face)%n_l,2)+1, &
          3,bc_type,side,B%tau0/B%G%hs)
   end subroutine launch_z_face
+
+  subroutine pml_sat_face(P,work,direction,fixed,a0,b0,na,nb,penalty)
+    type(block_pml),intent(inout) :: P
+    real(wp),allocatable,intent(in) :: work(:,:,:)
+    integer,intent(in) :: direction,fixed,a0,b0,na,nb
+    real(wp),intent(in) :: penalty
+    integer(kind=8) :: bytes
+    bytes=int(size(P%DQ),8)*int(storage_size(0.0_wp)/8,8)
+    if (.not.acc_is_present(P%DQ,bytes)) error stop 'Phase 6 terminal PML DQ absent'
+    call pml_sat_kernel(P%DQ,work,size(P%DQ,1),size(P%DQ,2),size(P%DQ,3), &
+         na,nb,lbound(P%DQ,1),lbound(P%DQ,2),lbound(P%DQ,3), &
+         direction,fixed,a0,b0,penalty)
+    !$acc update self(P%DQ)
+  end subroutine pml_sat_face
+
+  subroutine pml_sat_kernel(dq,work,n1,n2,n3,na,nb,l1,l2,l3,direction,fixed,a0,b0,penalty)
+    integer,intent(in) :: n1,n2,n3,na,nb,l1,l2,l3,direction,fixed,a0,b0
+    real(wp),intent(inout) :: dq(n1,n2,n3,9)
+    real(wp),intent(in) :: work(na,nb,9),penalty
+    integer :: a,b,i,j,k
+    !$acc parallel loop gang vector collapse(2) present(dq,work) private(i,j,k)
+    do b=1,nb; do a=1,na
+      if (direction==1) then
+        i=fixed-l1+1; j=a0+a-l2; k=b0+b-l3
+      else if (direction==2) then
+        i=a0+a-l1; j=fixed-l2+1; k=b0+b-l3
+      else
+        i=a0+a-l1; j=b0+b-l2; k=fixed-l3+1
+      end if
+      dq(i,j,k,:)=dq(i,j,k,:)-penalty*work(a,b,:)
+    end do; end do
+  end subroutine pml_sat_kernel
 
   subroutine face_boundary_kernel(field,rate,material,metricx,nl,nm,nn,work, &
        n1,n2,n3,nmat,nmetric,nly,nlz,ny,nz,fixed,ia0,ib0,ja0,jb0,direction,bc_type,side,penalty)
