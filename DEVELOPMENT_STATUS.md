@@ -1,12 +1,13 @@
 # Development status
 
-Last updated: 2026-08-06
+Last updated: 2026-08-08
 
 ## Current phase
 
-Phases 0-5 are complete and qualified with GNU and NVHPC. The RK vector kernels
+Phases 0-5 are complete and qualified with GNU and NVHPC. Phase 6A now has a
+guarded one-face `Lx` boundary-preparation/SAT OpenACC kernel. The RK vector kernels
 and the narrow one-rank traditional Cartesian elastic strict-interior RHS now
-execute on H100. Phase 6 boundary/SAT/PML expansion is next.
+execute on H100. The other five faces and compact PML remain in Phase 6.
 
 A post-Phase-5 deep audit found and corrected a ghost-cell index-mapping defect
 in the Phase 5 raw kernel, strengthened ownership/runtime checks, raised final
