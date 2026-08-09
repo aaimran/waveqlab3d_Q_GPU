@@ -1,6 +1,6 @@
 module traditional_boundary_rhs_backend
   use common, only : wp
-  use datatypes, only : block_type, block_grid_t, block_material
+  use datatypes, only : block_type, block_grid_t, block_material, block_pml
   use openacc
   implicit none
   private
@@ -13,11 +13,10 @@ contains
     type(block_grid_t),intent(in) :: G
     type(block_material),intent(inout) :: M
     logical,intent(out) :: handled
-    integer :: n1,n2,n3,x0,y0,z0
+    integer :: n1,n2,n3,x0,y0,z0,xl,xr,yl,yr,zl,zr
     integer(kind=8) :: fb,mb,jb
     handled=.false.
     if (nprocs /= 1 .or. trim(F%fd_type) /= 'traditional' .or. F%order /= 6) return
-    if (any(F%PMLB(:)%pml)) return
     if (M%anelastic .or. M%anelastic_Q .or. M%anelastic_Q8 .or. M%anelastic_Qf .or. &
         M%anelastic_Qf8 .or. M%anelastic_const_Q_4M .or. M%anelastic_const_Q_8M) return
     if (G%C%mq /= 1 .or. G%C%pq /= G%C%nq .or. G%C%mr /= 1 .or. &
@@ -25,6 +24,13 @@ contains
     if (min(G%C%nq,G%C%nr,G%C%ns) < 13) return
     n1=size(F%F%F,1); n2=size(F%F%F,2); n3=size(F%F%F,3)
     x0=1-lbound(F%F%F,1)+1; y0=1-lbound(F%F%F,2)+1; z0=1-lbound(F%F%F,3)+1
+    xl=6; xr=6; yl=6; yr=6; zl=6; zr=6
+    if (F%PMLB(1)%pml) xl=max(xl,F%PMLB(1)%N_pml)
+    if (F%PMLB(2)%pml) xr=max(xr,F%PMLB(2)%N_pml)
+    if (F%PMLB(3)%pml) yl=max(yl,F%PMLB(3)%N_pml)
+    if (F%PMLB(4)%pml) yr=max(yr,F%PMLB(4)%N_pml)
+    if (F%PMLB(5)%pml) zl=max(zl,F%PMLB(5)%N_pml)
+    if (F%PMLB(6)%pml) zr=max(zr,F%PMLB(6)%N_pml)
     if (x0 < 1 .or. x0+G%C%nq-1 > n1 .or. y0 < 1 .or. &
         y0+G%C%nr-1 > n2 .or. z0 < 1 .or. z0+G%C%ns-1 > n3) return
     fb=int(size(F%F%F),8)*int(storage_size(0.0_wp)/8,8)
@@ -35,7 +41,13 @@ contains
       error stop 'Phase 6 SBP arrays absent from device'
     call boundary_rhs_kernel(F%F%F,F%F%DF,M%M,G%J,G%metricx,G%metricy,G%metricz, &
          n1,n2,n3,size(M%M,4),size(G%metricx,4),G%C%nq,G%C%nr,G%C%ns, &
-         x0,y0,z0,G%hq,G%hr,G%hs)
+         x0,y0,z0,xl,xr,yl,yr,zl,zr,G%hq,G%hr,G%hs)
+    if (F%PMLB(1)%pml .and. allocated(F%PMLB(1)%Q)) call launch_pml(F%PMLB(1),F,G,M,1,-1)
+    if (F%PMLB(2)%pml .and. allocated(F%PMLB(2)%Q)) call launch_pml(F%PMLB(2),F,G,M,1, 1)
+    if (F%PMLB(3)%pml .and. allocated(F%PMLB(3)%Q)) call launch_pml(F%PMLB(3),F,G,M,2,-1)
+    if (F%PMLB(4)%pml .and. allocated(F%PMLB(4)%Q)) call launch_pml(F%PMLB(4),F,G,M,2, 1)
+    if (F%PMLB(5)%pml .and. allocated(F%PMLB(5)%Q)) call launch_pml(F%PMLB(5),F,G,M,3,-1)
+    if (F%PMLB(6)%pml .and. allocated(F%PMLB(6)%Q)) call launch_pml(F%PMLB(6),F,G,M,3, 1)
     !$acc update self(F%F%DF)
     if (environment_true('WQL3D_PHASE6_DIAGNOSTICS') .and. .not.reported) then
       write(*,'(A,3(I0,1X))') 'Phase 6 SBP boundary launch: ',G%C%nq,G%C%nr,G%C%ns
@@ -44,8 +56,9 @@ contains
     handled=.true.
   end subroutine try_traditional_boundary_rhs
 
-  subroutine boundary_rhs_kernel(field,rate,mat,jac,mx,my,mz,n1,n2,n3,nmat,nmet,nx,ny,nz,x0,y0,z0,hx,hy,hz)
-    integer,intent(in) :: n1,n2,n3,nmat,nmet,nx,ny,nz,x0,y0,z0
+  subroutine boundary_rhs_kernel(field,rate,mat,jac,mx,my,mz,n1,n2,n3,nmat,nmet,nx,ny,nz,x0,y0,z0, &
+       xl,xr,yl,yr,zl,zr,hx,hy,hz)
+    integer,intent(in) :: n1,n2,n3,nmat,nmet,nx,ny,nz,x0,y0,z0,xl,xr,yl,yr,zl,zr
     real(wp),intent(in) :: field(n1,n2,n3,9),mat(n1,n2,n3,nmat),jac(n1,n2,n3)
     real(wp),intent(in) :: mx(n1,n2,n3,nmet),my(n1,n2,n3,nmet),mz(n1,n2,n3,nmet)
     real(wp),intent(inout) :: rate(n1,n2,n3,9)
@@ -55,7 +68,7 @@ contains
     !$acc parallel loop gang vector collapse(3) present(field,rate,mat,jac,mx,my,mz) &
     !$acc& private(ix,iy,iz,s,c,ux,uy,uz,du,w,rhoj,l2m,lam,mu)
     do z=1,nz; do y=1,ny; do x=1,nx
-      if (x>=7 .and. x<=nx-6 .and. y>=7 .and. y<=ny-6 .and. z>=7 .and. z<=nz-6) cycle
+      if (x>=xl+1 .and. x<=nx-xr .and. y>=yl+1 .and. y<=ny-yr .and. z>=zl+1 .and. z<=nz-zr) cycle
       ix=x0+x-1; iy=y0+y-1; iz=z0+z-1; ux=0.0_wp; uy=0.0_wp; uz=0.0_wp
       do s=1,nx
         w=sbp_weight(x,s,nx)/hx
@@ -103,6 +116,75 @@ contains
       rate(ix,iy,iz,:)=rate(ix,iy,iz,:)+du
     end do; end do; end do
   end subroutine boundary_rhs_kernel
+
+  subroutine launch_pml(P,F,G,M,direction,side)
+    type(block_pml),intent(inout) :: P
+    type(block_type),intent(inout) :: F
+    type(block_grid_t),intent(in) :: G
+    type(block_material),intent(in) :: M
+    integer,intent(in) :: direction,side
+    integer(kind=8) :: qb
+    qb=int(size(P%Q),8)*int(storage_size(0.0_wp)/8,8)
+    if (.not.acc_is_present(P%Q,qb) .or. .not.acc_is_present(P%DQ,qb)) &
+      error stop 'Phase 6 compact PML arrays absent from device'
+    call pml_face_kernel(F%F%F,F%F%DF,M%M,G%J,G%metricx,G%metricy,G%metricz,P%Q,P%DQ, &
+         size(F%F%F,1),size(F%F%F,2),size(F%F%F,3),size(M%M,4),size(G%metricx,4), &
+         size(P%Q,1),size(P%Q,2),size(P%Q,3),G%C%nq,G%C%nr,G%C%ns, &
+         1-lbound(F%F%F,1)+1,1-lbound(F%F%F,2)+1,1-lbound(F%F%F,3)+1, &
+         lbound(P%Q,1),lbound(P%Q,2),lbound(P%Q,3),P%N_pml,direction,side,G%hq,G%hr,G%hs)
+    !$acc update self(P%DQ,F%F%DF)
+  end subroutine launch_pml
+
+  subroutine pml_face_kernel(field,rate,mat,jac,mx,my,mz,q,dq,n1,n2,n3,nmat,nmet, &
+       q1,q2,q3,nx,ny,nz,x0,y0,z0,ql1,ql2,ql3,npml,direction,side,hx,hy,hz)
+    integer,intent(in) :: n1,n2,n3,nmat,nmet,q1,q2,q3,nx,ny,nz,x0,y0,z0
+    integer,intent(in) :: ql1,ql2,ql3,npml,direction,side
+    real(wp),intent(in) :: field(n1,n2,n3,9),mat(n1,n2,n3,nmat),jac(n1,n2,n3)
+    real(wp),intent(in) :: mx(n1,n2,n3,nmet),my(n1,n2,n3,nmet),mz(n1,n2,n3,nmet),q(q1,q2,q3,9)
+    real(wp),intent(inout) :: rate(n1,n2,n3,9),dq(q1,q2,q3,9)
+    real(wp),intent(in) :: hx,hy,hz
+    integer :: i,j,k,x,y,z,ix,iy,iz,s,c
+    real(wp) :: ud(9),src(9),d,d0,cfs,w,rhoj,lam,mu,l2m
+    d0=3.0_wp*log(1000.0_wp); cfs=1.0_wp
+    !$acc parallel loop gang vector collapse(3) present(field,rate,mat,jac,mx,my,mz,q,dq) &
+    !$acc& private(x,y,z,ix,iy,iz,s,c,ud,src,d,w,rhoj,lam,mu,l2m)
+    do k=1,q3; do j=1,q2; do i=1,q1
+      x=ql1+i-1; y=ql2+j-1; z=ql3+k-1
+      ix=x0+x-1; iy=y0+y-1; iz=z0+z-1; ud=0.0_wp
+      if (direction==1) then
+        do s=1,nx
+          w=sbp_weight(x,s,nx)/hx
+          do c=1,3; ud(c)=ud(c)+mx(ix,iy,iz,1)*w*field(x0+s-1,iy,iz,c); end do
+          do c=4,9; ud(c)=ud(c)+w*field(x0+s-1,iy,iz,c)*jac(x0+s-1,iy,iz)*mx(x0+s-1,iy,iz,1); end do
+        end do
+        d=d0*abs(real(x-merge(1+npml,nx-npml,side<0),wp)/real(npml,wp))
+        src=(/ud(4)/jac(ix,iy,iz),ud(7)/jac(ix,iy,iz),ud(8)/jac(ix,iy,iz),ud(1),0.0_wp,0.0_wp,ud(2),ud(3),0.0_wp/)
+      else if (direction==2) then
+        do s=1,ny
+          w=sbp_weight(y,s,ny)/hy
+          do c=1,3; ud(c)=ud(c)+my(ix,iy,iz,2)*w*field(ix,y0+s-1,iz,c); end do
+          do c=4,9; ud(c)=ud(c)+w*field(ix,y0+s-1,iz,c)*jac(ix,y0+s-1,iz)*my(ix,y0+s-1,iz,2); end do
+        end do
+        d=d0*abs(real(y-merge(1+npml,ny-npml,side<0),wp)/real(npml,wp))
+        src=(/ud(7)/jac(ix,iy,iz),ud(5)/jac(ix,iy,iz),ud(9)/jac(ix,iy,iz),0.0_wp,ud(2),0.0_wp,ud(1),0.0_wp,ud(3)/)
+      else
+        do s=1,nz
+          w=sbp_weight(z,s,nz)/hz
+          do c=1,3; ud(c)=ud(c)+mz(ix,iy,iz,3)*w*field(ix,iy,z0+s-1,c); end do
+          do c=4,9; ud(c)=ud(c)+w*field(ix,iy,z0+s-1,c)*jac(ix,iy,z0+s-1)*mz(ix,iy,z0+s-1,3); end do
+        end do
+        d=d0*abs(real(z-merge(npml,nz-npml,side<0),wp)/real(npml,wp))
+        src=(/ud(8)/jac(ix,iy,iz),ud(9)/jac(ix,iy,iz),ud(6)/jac(ix,iy,iz),0.0_wp,0.0_wp,ud(3),0.0_wp,ud(1),ud(2)/)
+      end if
+      rhoj=1.0_wp/(mat(ix,iy,iz,3)*jac(ix,iy,iz)); lam=mat(ix,iy,iz,1); mu=mat(ix,iy,iz,2); l2m=lam+2.0_wp*mu
+      rate(ix,iy,iz,1:3)=rate(ix,iy,iz,1:3)-d*jac(ix,iy,iz)*q(i,j,k,1:3)*rhoj
+      rate(ix,iy,iz,4)=rate(ix,iy,iz,4)-d*(l2m*q(i,j,k,4)+lam*(q(i,j,k,5)+q(i,j,k,6)))
+      rate(ix,iy,iz,5)=rate(ix,iy,iz,5)-d*(l2m*q(i,j,k,5)+lam*(q(i,j,k,4)+q(i,j,k,6)))
+      rate(ix,iy,iz,6)=rate(ix,iy,iz,6)-d*(l2m*q(i,j,k,6)+lam*(q(i,j,k,4)+q(i,j,k,5)))
+      rate(ix,iy,iz,7:9)=rate(ix,iy,iz,7:9)-mu*d*q(i,j,k,7:9)
+      dq(i,j,k,:)=dq(i,j,k,:)+src-(d+cfs)*q(i,j,k,:)
+    end do; end do; end do
+  end subroutine pml_face_kernel
 
   !$acc routine seq
   real(wp) function sbp_weight(i,j,n) result(w)
