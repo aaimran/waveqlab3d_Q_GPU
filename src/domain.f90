@@ -514,18 +514,26 @@ contains
 
     type(domain_type),intent(inout) :: D
     real(wp) :: local_eta, global_eta, local_field, global_field
+    real(wp) :: local_pml_q,global_pml_q,local_pml_dq,global_pml_dq
     real(wp) :: local_block_field(2), global_block_field(2)
-    integer :: i, ierr
+    integer :: i,j,ierr
     logical :: local_finite, global_finite
 
     local_eta = 0.0_wp
     local_field = 0.0_wp
     local_block_field = 0.0_wp
+    local_pml_q=0.0_wp; local_pml_dq=0.0_wp
     local_finite = .true.
     do i = 1, D%nblocks
        if (.not.allocated(D%B(i)%F%F)) cycle
        local_block_field(i) = maxval(abs(D%B(i)%F%F))
        local_field = max(local_field, local_block_field(i))
+       do j=1,6
+          if (allocated(D%B(i)%PMLB(j)%Q)) then
+             local_pml_q=max(local_pml_q,maxval(abs(D%B(i)%PMLB(j)%Q)))
+             local_pml_dq=max(local_pml_dq,maxval(abs(D%B(i)%PMLB(j)%DQ)))
+          end if
+       end do
        if (trim(D%response) == 'anelastic-Q4' .or. trim(D%response) == 'anelastic-Q8' .or. &
            trim(D%response) == 'anelastic-fQ8') then
           if (trim(D%response) == 'anelastic-Q4' .and. allocated(D%B(i)%M%eta4Q)) then
@@ -552,6 +560,8 @@ contains
          MPI_COMM_WORLD, ierr)
     call MPI_Allreduce(local_field, global_field, 1, MPI_DOUBLE_PRECISION, MPI_MAX, &
          MPI_COMM_WORLD, ierr)
+    call MPI_Allreduce(local_pml_q,global_pml_q,1,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_WORLD,ierr)
+    call MPI_Allreduce(local_pml_dq,global_pml_dq,1,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_WORLD,ierr)
     call MPI_Allreduce(local_block_field, global_block_field, 2, MPI_DOUBLE_PRECISION, MPI_MAX, &
          MPI_COMM_WORLD, ierr)
     call MPI_Allreduce(local_finite, global_finite, 1, MPI_LOGICAL, MPI_LAND, &
@@ -582,6 +592,8 @@ contains
     end if
     if (rank == 0 .and. trim(D%response) == 'elastic') &
          write(*,'(A,ES24.16)') 'Elastic final state: max|field|=', global_field
+    if (rank == 0 .and. (global_pml_q > 0.0_wp .or. global_pml_dq > 0.0_wp)) &
+         write(*,'(A,ES24.16,A,ES24.16)') 'PML final state: max|Q|=',global_pml_q,', max|DQ|=',global_pml_dq
     if (rank == 0 .and. trim(D%response) == 'elastic' .and. D%nblocks == 2) &
          write(*,'(A,ES24.16,A,ES24.16)') 'Elastic block maxima: block1=', &
          global_block_field(1), ', block2=', global_block_field(2)
