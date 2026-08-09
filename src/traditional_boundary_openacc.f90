@@ -12,7 +12,7 @@ contains
     type(block_type), intent(inout) :: B
     type(mms_type), intent(in) :: mms_vars
     logical, intent(out) :: handled
-    integer :: mx, px, my, mz, py, pz, ix, n1, n2, n3
+    integer :: mx, px, my, py, mz, pz, ix, n1, n2, n3, face, bcs(6)
     integer(kind=8) :: field_bytes, metric_bytes, material_bytes, face_bytes, work_bytes
 
     handled = .false.
@@ -27,14 +27,15 @@ contains
     if (nprocs /= 1 .or. mms_vars%use_mms) return
     if (trim(B%fd_type) /= 'traditional' .or. B%order /= 6) return
     if (any(B%PMLB(:)%pml)) return
-    if (B%boundary_vars%Lx <= 0 .and. B%boundary_vars%Rx <= 0) return
-    if ((B%boundary_vars%Lx > 0 .and. (B%boundary_vars%Lx < 1 .or. B%boundary_vars%Lx > 3)) .or. &
-        (B%boundary_vars%Rx > 0 .and. (B%boundary_vars%Rx < 1 .or. B%boundary_vars%Rx > 3))) return
-    if (B%boundary_vars%Ly > 0 .or. B%boundary_vars%Ry > 0 .or. B%boundary_vars%Lz > 0 .or. &
-        B%boundary_vars%Rz > 0) return
+    bcs=(/B%boundary_vars%Lx,B%boundary_vars%Rx,B%boundary_vars%Ly, &
+        B%boundary_vars%Ry,B%boundary_vars%Lz,B%boundary_vars%Rz/)
+    if (all(bcs <= 0)) return
+    if (any(bcs > 3)) return
     if (.not.allocated(B%F%F) .or. .not.allocated(B%F%DF) .or. &
         .not.allocated(B%M%M) .or. .not.allocated(B%G%metricx) .or. &
-        .not.allocated(B%work_boundary_q)) return
+        .not.allocated(B%G%metricy) .or. .not.allocated(B%G%metricz) .or. &
+        .not.allocated(B%work_boundary_q) .or. .not.allocated(B%work_boundary_r) .or. &
+        .not.allocated(B%work_boundary_s)) return
     if (size(B%F%F,4) /= 9 .or. size(B%F%DF,4) /= 9 .or. size(B%M%M,4) < 3) return
     mx = B%G%C%mq; px = B%G%C%pq; my = B%G%C%mr; mz = B%G%C%ms
     py = B%G%C%pr; pz = B%G%C%ps
@@ -48,6 +49,12 @@ contains
         .not.allocated(B%B(1)%n_m) .or. .not.allocated(B%B(1)%n_n))) return
     if (B%boundary_vars%Rx > 0 .and. (.not.allocated(B%B(2)%n_l) .or. &
         .not.allocated(B%B(2)%n_m) .or. .not.allocated(B%B(2)%n_n))) return
+    do face=3,6
+      if (bcs(face) > 0) then
+        if (.not.allocated(B%B(face)%n_l) .or. .not.allocated(B%B(face)%n_m) .or. &
+            .not.allocated(B%B(face)%n_n)) return
+      end if
+    end do
     if (environment_true('WQL3D_PHASE6_DIAGNOSTICS') .and. .not.launch_reported) then
       write(*,'(A,3(I0,1X),A,3(I0,1X))') 'Phase 6 x-face shapes: work=', &
            shape(B%work_boundary_q),' field=',size(B%F%F,1),size(B%F%F,2),size(B%F%F,3)
@@ -69,6 +76,8 @@ contains
         .not.acc_is_present(B%F%DF,field_bytes) .or. &
         .not.acc_is_present(B%M%M,material_bytes) .or. &
         .not.acc_is_present(B%G%metricx,metric_bytes) .or. &
+        .not.acc_is_present(B%G%metricy,metric_bytes) .or. &
+        .not.acc_is_present(B%G%metricz,metric_bytes) .or. &
         .not.acc_is_present(B%work_boundary_q,work_bytes)) &
       error stop 'Phase 6 Lx boundary arrays are not present on device'
 
@@ -78,28 +87,32 @@ contains
       if (.not.acc_is_present(B%B(1)%n_l,face_bytes) .or. &
           .not.acc_is_present(B%B(1)%n_m,face_bytes) .or. &
           .not.acc_is_present(B%B(1)%n_n,face_bytes)) error stop 'Phase 6 Lx normals absent'
-      call x_boundary_kernel(B%F%F,B%F%DF,B%M%M,B%G%metricx, &
+      call face_boundary_kernel(B%F%F,B%F%DF,B%M%M,B%G%metricx, &
          B%B(1)%n_l,B%B(1)%n_m,B%B(1)%n_n,B%work_boundary_q, &
          n1,n2,n3,size(B%M%M,4),size(B%G%metricx,4), &
          size(B%B(1)%n_l,1),size(B%B(1)%n_l,2),py-my+1,pz-mz+1, &
          ix,my-lbound(B%F%F,2)+1,mz-lbound(B%F%F,3)+1, &
          my-lbound(B%B(1)%n_l,1)+1,mz-lbound(B%B(1)%n_l,2)+1, &
-         B%boundary_vars%Lx,-1.0_wp,B%tau0/B%G%hq)
+         1,B%boundary_vars%Lx,-1.0_wp,B%tau0/B%G%hq)
     end if
     if (B%boundary_vars%Rx > 0) then
       face_bytes = int(size(B%B(2)%n_l),8)*int(storage_size(0.0_wp)/8,8)
       if (.not.acc_is_present(B%B(2)%n_l,face_bytes) .or. &
           .not.acc_is_present(B%B(2)%n_m,face_bytes) .or. &
           .not.acc_is_present(B%B(2)%n_n,face_bytes)) error stop 'Phase 6 Rx normals absent'
-      call x_boundary_kernel(B%F%F,B%F%DF,B%M%M,B%G%metricx, &
+      call face_boundary_kernel(B%F%F,B%F%DF,B%M%M,B%G%metricx, &
          B%B(2)%n_l,B%B(2)%n_m,B%B(2)%n_n,B%work_boundary_q, &
          n1,n2,n3,size(B%M%M,4),size(B%G%metricx,4), &
          size(B%B(2)%n_l,1),size(B%B(2)%n_l,2),py-my+1,pz-mz+1, &
          px-lbound(B%F%F,1)+1,my-lbound(B%F%F,2)+1,mz-lbound(B%F%F,3)+1, &
          my-lbound(B%B(2)%n_l,1)+1,mz-lbound(B%B(2)%n_l,2)+1, &
-         B%boundary_vars%Rx,1.0_wp,B%tau0/B%G%hq)
+         1,B%boundary_vars%Rx,1.0_wp,B%tau0/B%G%hq)
     end if
-    !$acc update self(B%F%DF,B%work_boundary_q)
+    if (B%boundary_vars%Ly > 0) call launch_y_face(B,3,my,-1.0_wp,B%boundary_vars%Ly)
+    if (B%boundary_vars%Ry > 0) call launch_y_face(B,4,py, 1.0_wp,B%boundary_vars%Ry)
+    if (B%boundary_vars%Lz > 0) call launch_z_face(B,5,mz,-1.0_wp,B%boundary_vars%Lz)
+    if (B%boundary_vars%Rz > 0) call launch_z_face(B,6,pz, 1.0_wp,B%boundary_vars%Rz)
+    !$acc update self(B%F%DF,B%work_boundary_q,B%work_boundary_r,B%work_boundary_s)
     if (environment_true('WQL3D_PHASE6_DIAGNOSTICS') .and. .not.launch_reported) then
       write(*,'(A,I0,A,I0,A,2(I0,1X))') 'Phase 6 x-face launch: ny=',py-my+1, &
            ' nz=',pz-mz+1,' bc=',B%boundary_vars%Lx,B%boundary_vars%Rx
@@ -108,28 +121,76 @@ contains
     handled = .true.
   end subroutine try_traditional_lx_boundary
 
-  subroutine x_boundary_kernel(field,rate,material,metricx,nl,nm,nn,work, &
-       n1,n2,n3,nmat,nmetric,nly,nlz,ny,nz,ix,iy0,iz0,jy0,jz0,bc_type,side,penalty)
+  subroutine launch_y_face(B,face,yface,side,bc_type)
+    type(block_type),intent(inout) :: B
+    integer,intent(in) :: face,yface,bc_type
+    real(kind=wp),intent(in) :: side
+    integer :: mx,my,mz,px,pz,n1,n2,n3
+    integer(kind=8) :: face_bytes
+    mx=B%G%C%mq; px=B%G%C%pq; my=B%G%C%mr; mz=B%G%C%ms; pz=B%G%C%ps
+    n1=size(B%F%F,1); n2=size(B%F%F,2); n3=size(B%F%F,3)
+    face_bytes=int(size(B%B(face)%n_l),8)*int(storage_size(0.0_wp)/8,8)
+    if (.not.acc_is_present(B%B(face)%n_l,face_bytes) .or. &
+        .not.acc_is_present(B%B(face)%n_m,face_bytes) .or. &
+        .not.acc_is_present(B%B(face)%n_n,face_bytes)) error stop 'Phase 6 y-face normals absent'
+    call face_boundary_kernel(B%F%F,B%F%DF,B%M%M,B%G%metricy, &
+         B%B(face)%n_l,B%B(face)%n_m,B%B(face)%n_n,B%work_boundary_r, &
+         n1,n2,n3,size(B%M%M,4),size(B%G%metricy,4), &
+         size(B%B(face)%n_l,1),size(B%B(face)%n_l,2),px-mx+1,pz-mz+1, &
+         yface-lbound(B%F%F,2)+1,mx-lbound(B%F%F,1)+1,mz-lbound(B%F%F,3)+1, &
+         mx-lbound(B%B(face)%n_l,1)+1,mz-lbound(B%B(face)%n_l,2)+1, &
+         2,bc_type,side,B%tau0/B%G%hr)
+  end subroutine launch_y_face
+
+  subroutine launch_z_face(B,face,zface,side,bc_type)
+    type(block_type),intent(inout) :: B
+    integer,intent(in) :: face,zface,bc_type
+    real(kind=wp),intent(in) :: side
+    integer :: mx,my,mz,px,py,n1,n2,n3
+    integer(kind=8) :: face_bytes
+    mx=B%G%C%mq; px=B%G%C%pq; my=B%G%C%mr; py=B%G%C%pr; mz=B%G%C%ms
+    n1=size(B%F%F,1); n2=size(B%F%F,2); n3=size(B%F%F,3)
+    face_bytes=int(size(B%B(face)%n_l),8)*int(storage_size(0.0_wp)/8,8)
+    if (.not.acc_is_present(B%B(face)%n_l,face_bytes) .or. &
+        .not.acc_is_present(B%B(face)%n_m,face_bytes) .or. &
+        .not.acc_is_present(B%B(face)%n_n,face_bytes)) error stop 'Phase 6 z-face normals absent'
+    call face_boundary_kernel(B%F%F,B%F%DF,B%M%M,B%G%metricz, &
+         B%B(face)%n_l,B%B(face)%n_m,B%B(face)%n_n,B%work_boundary_s, &
+         n1,n2,n3,size(B%M%M,4),size(B%G%metricz,4), &
+         size(B%B(face)%n_l,1),size(B%B(face)%n_l,2),px-mx+1,py-my+1, &
+         zface-lbound(B%F%F,3)+1,mx-lbound(B%F%F,1)+1,my-lbound(B%F%F,2)+1, &
+         mx-lbound(B%B(face)%n_l,1)+1,my-lbound(B%B(face)%n_l,2)+1, &
+         3,bc_type,side,B%tau0/B%G%hs)
+  end subroutine launch_z_face
+
+  subroutine face_boundary_kernel(field,rate,material,metricx,nl,nm,nn,work, &
+       n1,n2,n3,nmat,nmetric,nly,nlz,ny,nz,fixed,ia0,ib0,ja0,jb0,direction,bc_type,side,penalty)
     integer,intent(in) :: n1,n2,n3,nmat,nmetric,nly,nlz,ny,nz
-    integer,intent(in) :: ix,iy0,iz0,jy0,jz0,bc_type
+    integer,intent(in) :: fixed,ia0,ib0,ja0,jb0,direction,bc_type
     real(kind=wp),intent(in) :: field(n1,n2,n3,9),material(n1,n2,n3,nmat)
     real(kind=wp),intent(in) :: metricx(n1,n2,n3,nmetric)
     real(kind=wp),intent(in) :: nl(nly,nlz,3),nm(nly,nlz,3),nn(nly,nlz,3)
     real(kind=wp),intent(inout) :: rate(n1,n2,n3,9),work(ny,nz,9)
     real(kind=wp),intent(in) :: side,penalty
-    integer :: iy,iz,j,k
+    integer :: ix,iy,iz,j,k
     real(kind=wp) :: u(9),ubc(9),ux(9),l(3),m(3),nv(3),traction(3)
     real(kind=wp) :: rho,mu,lam,cp,cs,zp,zs,norm,r
     real(kind=wp) :: vl,vm,vn,tl,tm,tn,pl,pm,pn,ql,qm,qn
     real(kind=wp) :: fx,fy,fz,f_x,f_y,f_z
     !$acc parallel loop gang vector collapse(2) present(field,rate,material,metricx,nl,nm,nn,work) &
     !$acc& private(u,ubc,ux,l,m,nv,traction,rho,mu,lam,cp,cs,zp,zs,norm,r, &
-    !$acc& vl,vm,vn,tl,tm,tn,pl,pm,pn,ql,qm,qn,fx,fy,fz,f_x,f_y,f_z,iy,iz)
+    !$acc& vl,vm,vn,tl,tm,tn,pl,pm,pn,ql,qm,qn,fx,fy,fz,f_x,f_y,f_z,ix,iy,iz)
     do k=1,nz
       do j=1,ny
-        iy=iy0+j-1; iz=iz0+k-1
-        u=field(ix,iy,iz,:); l=nl(jy0+j-1,jz0+k-1,:)
-        m=nm(jy0+j-1,jz0+k-1,:); nv=nn(jy0+j-1,jz0+k-1,:)
+        if (direction == 1) then
+          ix=fixed; iy=ia0+j-1; iz=ib0+k-1
+        else if (direction == 2) then
+          ix=ia0+j-1; iy=fixed; iz=ib0+k-1
+        else
+          ix=ia0+j-1; iy=ib0+k-1; iz=fixed
+        end if
+        u=field(ix,iy,iz,:); l=nl(ja0+j-1,jb0+k-1,:)
+        m=nm(ja0+j-1,jb0+k-1,:); nv=nn(ja0+j-1,jb0+k-1,:)
         rho=material(ix,iy,iz,3); mu=material(ix,iy,iz,2); lam=material(ix,iy,iz,1)
         cp=sqrt((2.0_wp*mu+lam)/rho); cs=sqrt(mu/rho); zp=rho*cp; zs=rho*cs
         norm=sqrt(metricx(ix,iy,iz,1)**2+metricx(ix,iy,iz,2)**2+metricx(ix,iy,iz,3)**2)
@@ -161,7 +222,7 @@ contains
         rate(ix,iy,iz,:)=rate(ix,iy,iz,:)-penalty*ux
       end do
     end do
-  end subroutine x_boundary_kernel
+  end subroutine face_boundary_kernel
 
   logical function environment_true(name)
     character(len=*),intent(in) :: name
