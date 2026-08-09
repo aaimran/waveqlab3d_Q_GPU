@@ -4,10 +4,11 @@ Last updated: 2026-08-08
 
 ## Current phase
 
-Phases 0-5 are complete and qualified with GNU and NVHPC. Phase 6A now has
-guarded all-face boundary-preparation/SAT OpenACC kernels. The RK vector kernels
-and the narrow one-rank traditional Cartesian elastic strict-interior RHS now
-execute on H100. Compact PML remains in Phase 6.
+Phases 0-6 are implemented for the guarded one-rank traditional order-6
+Cartesian elastic path and qualified with NVHPC on H100. Phase 6 includes exact
+SBP boundary closures, all physical-face SAT kernels, all compact PML faces,
+edge/corner composition, terminal PML SAT forcing, and device-resident PML RK
+state. Unsupported configurations retain the CPU fallback.
 
 A post-Phase-5 deep audit found and corrected a ghost-cell index-mapping defect
 in the Phase 5 raw kernel, strengthened ownership/runtime checks, raised final
@@ -49,8 +50,10 @@ oracle precision to 16 digits, and added explicit fallback tests. See
 
 ## Not implemented yet
 
-- Traditional SBP near-boundary closures, SAT/interface, source, PML, alternate
-  spatial operators, and MPI numerical work remain on the host.
+- Alternate spatial operators, interfaces, attenuation, curvilinear geometry,
+  faults, plasticity, and MPI numerical work remain on the host.
+- The point moment source and general physical field/rate fallback still stage
+  through the host; compact PML `Q`/`DQ` itself is resident through timestepping.
 - Phase 4's host RHS boundary requires five explicit synchronization sites;
   useful GPU performance is not yet expected.
 - CUDA-aware MPI has not been exercised; its option currently records intent.
@@ -58,10 +61,9 @@ oracle precision to 16 digits, and added explicit fallback tests. See
 
 ## Next gate
 
-1. Port traditional SBP near-boundary and SAT forcing with stage-level oracles.
-2. Add compact PML one face at a time before edges and corners.
-3. Preserve the CPU oracle and keep host/device transfers explicit and audited.
-4. Keep CUDA-aware MPI disabled.
+1. Begin Phase 7 operator and geometry expansion one axis/family at a time.
+2. Preserve CPU fallbacks and add receiver-trace oracles for each new family.
+3. Keep CUDA-aware MPI disabled until the later communication phases.
 
 ## Local verification
 
