@@ -39,6 +39,7 @@ contains
     if (.not.acc_is_present(F%F%F,fb) .or. .not.acc_is_present(F%F%DF,fb) .or. &
         .not.acc_is_present(M%M,mb) .or. .not.acc_is_present(G%J,jb)) &
       error stop 'Phase 6 SBP arrays absent from device'
+    !$acc update device(F%F%F,F%F%DF)
     call boundary_rhs_kernel(F%F%F,F%F%DF,M%M,G%J,G%metricx,G%metricy,G%metricz, &
          n1,n2,n3,size(M%M,4),size(G%metricx,4),G%C%nq,G%C%nr,G%C%ns, &
          x0,y0,z0,xl,xr,yl,yr,zl,zr,G%hq,G%hr,G%hs)
