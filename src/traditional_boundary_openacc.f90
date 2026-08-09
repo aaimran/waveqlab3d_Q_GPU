@@ -16,6 +16,14 @@ contains
     integer(kind=8) :: field_bytes, metric_bytes, material_bytes, face_bytes, work_bytes
 
     handled = .false.
+    if (environment_true('WQL3D_PHASE6_DIAGNOSTICS') .and. .not.launch_reported) then
+      write(*,'(A,I0,A,L1,A,A,A,I0,A,6(I0,1X),A,6(L1,1X))') &
+           'Phase 6 Lx eligibility: ranks=',nprocs,' mms=',mms_vars%use_mms, &
+           ' fd=',trim(B%fd_type),' order=',B%order,' bc=', &
+           B%boundary_vars%Lx,B%boundary_vars%Rx,B%boundary_vars%Ly, &
+           B%boundary_vars%Ry,B%boundary_vars%Lz,B%boundary_vars%Rz, &
+           ' pml=',B%PMLB(:)%pml
+    end if
     if (nprocs /= 1 .or. mms_vars%use_mms) return
     if (trim(B%fd_type) /= 'traditional' .or. B%order /= 6) return
     if (any(B%PMLB(:)%pml)) return
@@ -27,6 +35,12 @@ contains
         .not.allocated(B%M%M) .or. .not.allocated(B%G%metricx) .or. &
         .not.allocated(B%B(1)%n_l) .or. .not.allocated(B%B(1)%n_m) .or. &
         .not.allocated(B%B(1)%n_n) .or. .not.allocated(B%work_boundary_q)) return
+    if (environment_true('WQL3D_PHASE6_DIAGNOSTICS') .and. .not.launch_reported) then
+      write(*,'(A,3(I0,1X),A,3(I0,1X),A,3(I0,1X))') &
+           'Phase 6 Lx shapes: nl=',shape(B%B(1)%n_l), &
+           ' work=',shape(B%work_boundary_q),' field=', &
+           size(B%F%F,1),size(B%F%F,2),size(B%F%F,3)
+    end if
     if (size(B%F%F,4) /= 9 .or. size(B%F%DF,4) /= 9 .or. size(B%M%M,4) < 3) return
     mx = B%G%C%mq; my = B%G%C%mr; mz = B%G%C%ms
     py = B%G%C%pr; pz = B%G%C%ps
