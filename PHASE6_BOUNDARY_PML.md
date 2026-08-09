@@ -22,7 +22,7 @@ Elastic final state: max|field|=  1.6623128367649574E+02
 
 ## Remaining Phase 6 work
 
-- Qualify the other five physical faces and all three boundary modes.
+- Add dedicated nonzero face-forcing oracles for free and clamped modes.
 - Add after-every-stage `F`, `DF`, face-forcing, `Q`, and `DQ` comparisons.
 - Port compact PML in the required one-face, opposing-face, edge, corner, and
   all-face sequence, followed by its terminal boundary treatment.
